@@ -89,18 +89,26 @@ int main(int ac, char **av)
         return 1;
     }
 
-    for (int i = 0; i < section_header.sh_size; i++)
-    {
-        char c;
-        read(file, &c, 1);
-        if (c == '7')
-        {
-            printf("(%i|%c)\n", i, c);
-            lseek(file, -1, SEEK_CUR);
-            write(file, "*", 1);
-        }
-    }
-    printf("\n");
+    unsigned char exit_code_4_shellcode[] = {
+        0x48, 0xc7, 0xc0, 0x3c, 0x00, 0x00, 0x00, // mov rax, 60
+        0x48, 0xc7, 0xc7, 0x04, 0x00, 0x00, 0x00, // mov rdi, 4
+        0x0f, 0x05                                // syscall
+    };
+
+    write(file, exit_code_4_shellcode, sizeof(exit_code_4_shellcode));
+
+    // for (int i = 0; i < section_header.sh_size; i++)
+    // {
+    //     char c;
+    //     read(file, &c, 1);
+    //     if (c == '7')
+    //     {
+    //         printf("(%i|%c)\n", i, c);
+    //         lseek(file, -1, SEEK_CUR);
+    //         write(file, "*", 1);
+    //     }
+    // }
+    // printf("\n");
 
     // offset = lseek(file, section_header.sh_offset, SEEK_SET);
     // for (int i = 0; i < section_header.sh_size; i++)
