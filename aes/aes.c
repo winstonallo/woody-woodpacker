@@ -20,6 +20,8 @@ static const uint8_t SBoxArray[16][16] = {
 };
 #define SBox(b) SBoxArray[(b & 0xF0) >> 4][b & 0x0F]
 
+#define ROTL_32(val, by) (((by) & 31) == 0 ? (val) : ((val) << ((by) & 31)) | ((val) >> (32 - ((by) & 31))))
+
 static void
 SubBytes(uint8_t state[16]) {
     for (int i = 0; i < 16; ++i) {
