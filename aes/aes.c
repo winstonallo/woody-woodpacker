@@ -23,6 +23,7 @@
 static uint8_t *
 SubBytes(uint8_t state[16]) {
     for (int i = 0; i < 16; ++i) {
-        state[i] = SBox[(state[i] & 0xF0) >> 4][state[i] & 0x0F];
+        state[i] = SBox(state[i]);
     }
+    return state;
 }
