@@ -50,12 +50,8 @@ xTimesx(uint8_t a, uint8_t x) {
     return res;
 }
 
-static void
-SwapBytes(uint8_t *const restrict a, uint8_t *const restrict b) {
-    *a ^= *b;
-    *b ^= *a;
-    *a ^= *b;
-}
+#define Mul02(b) xTimes(b)
+#define Mul03(b) xTimes(b) ^ b
 
 // Column-Major: s[row, col] = s[row + 4col]
 static void
