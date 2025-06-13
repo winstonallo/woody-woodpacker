@@ -20,12 +20,11 @@ static const uint8_t SBoxArray[16][16] = {
 };
 #define SBox(b) SBoxArray[(b & 0xF0) >> 4][b & 0x0F]
 
-static uint8_t *
+static void
 SubBytes(uint8_t state[16]) {
     for (int i = 0; i < 16; ++i) {
         state[i] = SBox(state[i]);
     }
-    return state;
 }
 
 static uint8_t
@@ -59,7 +58,7 @@ SwapBytes(uint8_t *const restrict a, uint8_t *const restrict b) {
 }
 
 // Column-Major: s[row, col] = s[row + 4col]
-static uint8_t *
+static void
 ShiftRows(uint8_t state[16]) {
     // Row 1: shift left by 1
     uint8_t temp = state[1];
@@ -82,8 +81,6 @@ ShiftRows(uint8_t state[16]) {
     state[11] = state[7];
     state[7] = state[3];
     state[3] = temp;
-
-    return state;
 }
 
 static uint8_t *
