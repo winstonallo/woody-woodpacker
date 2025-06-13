@@ -95,5 +95,24 @@ main() {
     assert(xTimesx(0x57, 0x04) == 0x47);
     assert(xTimesx(0x57, 0x80) == 0x38);
     assert(SBox(0x53) == 0xed);
+
+    uint8_t state[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
+    ShiftRows(state);
+    assert(state[0] == 0);
+    assert(state[4] == 4);
+    assert(state[8] == 8);
+    assert(state[12] == 12);
+    assert(state[1] == 5);
+    assert(state[5] == 9);
+    assert(state[9] == 13);
+    assert(state[13] == 1);
+    assert(state[2] == 10);
+    assert(state[6] == 14);
+    assert(state[10] == 2);
+    assert(state[14] == 6);
+    assert(state[3] == 15);
+    assert(state[7] == 3);
+    assert(state[11] == 7);
+    assert(state[15] == 11);
 }
 #endif
