@@ -27,3 +27,72 @@ SubBytes(uint8_t state[16]) {
     }
     return state;
 }
+
+static uint8_t
+xTimes(uint8_t b) {
+    if ((b & 0x80) == 0) {
+        return b << 1;
+    }
+
+    return (b << 1) ^ 0b00011011; // x^4 + x^3 + x + 1
+}
+
+static uint8_t
+xTimesx(uint8_t a, uint8_t x) {
+    uint8_t res = 0;
+
+    for (int i = 0; i < 8; ++i) {
+        if (x & 1) {
+            res ^= a;
+        }
+        x >>= 1;
+        a = xTimes(a);
+    }
+    return res;
+}
+
+static void
+SwapBytes(uint8_t *const restrict a, uint8_t *const restrict b) {
+    *a ^= *b;
+    *b ^= *a;
+    *a ^= *b;
+}
+
+// Column-Major: s[row, col] = s[row + 4col]
+static uint8_t *
+ShiftRows(uint8_t state[16]) {
+    // Row 1: shift left by 1
+    uint8_t temp = state[1];
+    state[1] = state[5];
+    state[5] = state[9];
+    state[9] = state[13];
+    state[13] = temp;
+
+    // Row 2: shift left by 2 (swap pairs)
+    temp = state[2];
+    state[2] = state[10];
+    state[10] = temp;
+    temp = state[6];
+    state[6] = state[14];
+    state[14] = temp;
+
+    // Row 3: shift left by 3 (= shift right by 1)
+    temp = state[15];
+    state[15] = state[11];
+    state[11] = state[7];
+    state[7] = state[3];
+    state[3] = temp;
+
+    return state;
+}
+
+#ifdef TEST
+int
+main() {
+    assert(xTimes(0x57) == 0xae);
+    assert(xTimes(0xae) == 0x47);
+    assert(xTimesx(0x57, 0x04) == 0x47);
+    assert(xTimesx(0x57, 0x80) == 0x38);
+    assert(SBox(0x53) == 0xed);
+}
+#endif
