@@ -86,6 +86,27 @@ ShiftRows(uint8_t state[16]) {
     return state;
 }
 
+static uint8_t *
+MixColumns(uint8_t state[16]) {
+    state[0] = xTimesx(state[0], 0x02) ^ xTimesx(state[1], 0x03) ^ state[2] ^ state[3];
+    state[1] = state[0] ^ xTimesx(state[1], 0x02) ^ xTimesx(state[2], 0x03) ^ state[3];
+    state[2] = state[0] ^ state[1] ^ xTimesx(state[2], 0x02) ^ xTimesx(state[3], 0x03);
+    state[3] = xTimesx(state[0], 0x03) ^ state[1] ^ state[2] ^ xTimesx(state[3], 0x02);
+    state[4] = xTimesx(state[4], 0x02) ^ xTimesx(state[5], 0x03) ^ state[6] ^ state[7];
+    state[5] = state[4] ^ xTimesx(state[5], 0x02) ^ xTimesx(state[6], 0x03) ^ state[7];
+    state[6] = state[4] ^ state[5] ^ xTimesx(state[6], 0x02) ^ xTimesx(state[7], 0x03);
+    state[7] = xTimesx(state[4], 0x03) ^ state[5] ^ state[6] ^ xTimesx(state[7], 0x02);
+    state[8] = xTimesx(state[8], 0x02) ^ xTimesx(state[9], 0x03) ^ state[10] ^ state[11];
+    state[9] = state[8] ^ xTimesx(state[9], 0x02) ^ xTimesx(state[10], 0x03) ^ state[11];
+    state[10] = state[8] ^ state[9] ^ xTimesx(state[10], 0x02) ^ xTimesx(state[11], 0x03);
+    state[11] = xTimesx(state[8], 0x03) ^ state[9] ^ state[10] ^ xTimesx(state[11], 0x02);
+    state[12] = xTimesx(state[12], 0x02) ^ xTimesx(state[13], 0x03) ^ state[14] ^ state[15];
+    state[13] = state[12] ^ xTimesx(state[13], 0x02) ^ xTimesx(state[14], 0x03) ^ state[15];
+    state[14] = state[12] ^ state[13] ^ xTimesx(state[14], 0x02) ^ xTimesx(state[15], 0x03);
+    state[15] = xTimesx(state[12], 0x03) ^ state[13] ^ state[14] ^ xTimesx(state[15], 0x02);
+    return state;
+}
+
 #ifdef TEST
 #include <assert.h>
 int
