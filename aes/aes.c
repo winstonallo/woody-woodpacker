@@ -87,6 +87,7 @@ ShiftRows(uint8_t state[16]) {
 }
 
 #ifdef TEST
+#include <assert.h>
 int
 main() {
     assert(xTimes(0x57) == 0xae);
