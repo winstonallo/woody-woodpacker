@@ -108,6 +108,12 @@ MixColumns(uint8_t state[16]) {
     state[15] = Mul03(s12) ^ s13 ^ s14 ^ Mul02(s15);
 }
 
+static void
+AddRoundKey(uint8_t state[16], uint32_t key[8], uint8_t round) {
+
+    *((uint32_t *)&state[0]) = *((uint32_t *)&state[0]) ^ key[4 * round];
+}
+
 #ifdef TEST
 #include <assert.h>
 int
