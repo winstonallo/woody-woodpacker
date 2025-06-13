@@ -79,25 +79,31 @@ ShiftRows(uint8_t state[16]) {
     state[3] = temp;
 }
 
-static uint8_t *
+static void
 MixColumns(uint8_t state[16]) {
-    state[0] = xTimesx(state[0], 0x02) ^ xTimesx(state[1], 0x03) ^ state[2] ^ state[3];
-    state[1] = state[0] ^ xTimesx(state[1], 0x02) ^ xTimesx(state[2], 0x03) ^ state[3];
-    state[2] = state[0] ^ state[1] ^ xTimesx(state[2], 0x02) ^ xTimesx(state[3], 0x03);
-    state[3] = xTimesx(state[0], 0x03) ^ state[1] ^ state[2] ^ xTimesx(state[3], 0x02);
-    state[4] = xTimesx(state[4], 0x02) ^ xTimesx(state[5], 0x03) ^ state[6] ^ state[7];
-    state[5] = state[4] ^ xTimesx(state[5], 0x02) ^ xTimesx(state[6], 0x03) ^ state[7];
-    state[6] = state[4] ^ state[5] ^ xTimesx(state[6], 0x02) ^ xTimesx(state[7], 0x03);
-    state[7] = xTimesx(state[4], 0x03) ^ state[5] ^ state[6] ^ xTimesx(state[7], 0x02);
-    state[8] = xTimesx(state[8], 0x02) ^ xTimesx(state[9], 0x03) ^ state[10] ^ state[11];
-    state[9] = state[8] ^ xTimesx(state[9], 0x02) ^ xTimesx(state[10], 0x03) ^ state[11];
-    state[10] = state[8] ^ state[9] ^ xTimesx(state[10], 0x02) ^ xTimesx(state[11], 0x03);
-    state[11] = xTimesx(state[8], 0x03) ^ state[9] ^ state[10] ^ xTimesx(state[11], 0x02);
-    state[12] = xTimesx(state[12], 0x02) ^ xTimesx(state[13], 0x03) ^ state[14] ^ state[15];
-    state[13] = state[12] ^ xTimesx(state[13], 0x02) ^ xTimesx(state[14], 0x03) ^ state[15];
-    state[14] = state[12] ^ state[13] ^ xTimesx(state[14], 0x02) ^ xTimesx(state[15], 0x03);
-    state[15] = xTimesx(state[12], 0x03) ^ state[13] ^ state[14] ^ xTimesx(state[15], 0x02);
-    return state;
+    uint8_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
+    state[0] = Mul02(s0) ^ Mul03(s1) ^ s2 ^ s3;
+    state[1] = s0 ^ Mul02(s1) ^ Mul03(s2) ^ s3;
+    state[2] = s0 ^ s1 ^ Mul02(s2) ^ Mul03(s3);
+    state[3] = Mul03(s0) ^ s1 ^ s2 ^ Mul02(s3);
+
+    uint8_t s4 = state[4], s5 = state[5], s6 = state[6], s7 = state[7];
+    state[4] = Mul02(s4) ^ Mul03(s5) ^ s6 ^ s7;
+    state[5] = s4 ^ Mul02(s5) ^ Mul03(s6) ^ s7;
+    state[6] = s4 ^ s5 ^ Mul02(s6) ^ Mul03(s7);
+    state[7] = Mul03(s4) ^ s5 ^ s6 ^ Mul02(s7);
+
+    uint8_t s8 = state[8], s9 = state[9], s10 = state[10], s11 = state[11];
+    state[8] = Mul02(s8) ^ Mul03(s9) ^ s10 ^ s11;
+    state[9] = s8 ^ Mul02(s9) ^ Mul03(s10) ^ s11;
+    state[10] = s8 ^ s9 ^ Mul02(s10) ^ Mul03(s11);
+    state[11] = Mul03(s8) ^ s9 ^ s10 ^ Mul02(s11);
+
+    uint8_t s12 = state[12], s13 = state[13], s14 = state[14], s15 = state[15];
+    state[12] = Mul02(s12) ^ Mul03(s13) ^ s14 ^ s15;
+    state[13] = s12 ^ Mul02(s13) ^ Mul03(s14) ^ s15;
+    state[14] = s12 ^ s13 ^ Mul02(s14) ^ Mul03(s15);
+    state[15] = Mul03(s12) ^ s13 ^ s14 ^ Mul02(s15);
 }
 
 #ifdef TEST
