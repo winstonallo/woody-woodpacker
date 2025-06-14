@@ -131,7 +131,7 @@ AddRoundKey(uint32_t *state, uint32_t *w) {
 }
 
 // Nr = 14 for AES-256
-static uint8_t *
+uint8_t *
 Cipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
     uint8_t *state = malloc(16 * sizeof(uint8_t)); // TODO: put this on stack
     memcpy(state, in, 16);                         // TODO: use own memcpy/hardcode
