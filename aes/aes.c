@@ -23,7 +23,8 @@ static const uint8_t SBoxArray[16][16] = {
 };
 #define SBox(b) SBoxArray[(b & 0xF0) >> 4][b & 0x0F]
 
-static const uint32_t Rcon[10] = {0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x1b000000, 0x36000000};
+static const uint32_t Rcon[11] = {0x00000000, 0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000,
+                                  0x20000000, 0x40000000, 0x80000000, 0x1b000000, 0x36000000};
 
 // val: uint32_t
 #define RotWord(val) ((val << 8) | (val >> 24))
@@ -213,6 +214,55 @@ main() {
     assert(w[6] == 0x2d9810a3);
     assert(w[7] == 0x0914dff4);
     assert(w[8] == 0x9ba35411);
+    assert(w[9] == 0x8e6925af);
+    assert(w[10] == 0xa51a8b5f);
+    assert(w[11] == 0x2067fcde);
+    assert(w[12] == 0xa8b09c1a);
+    assert(w[13] == 0x93d194cd);
+    assert(w[14] == 0xbe49846e);
+    assert(w[15] == 0xb75d5b9a);
+    assert(w[16] == 0xd59aecb8);
+    assert(w[17] == 0x5bf3c917);
+    assert(w[18] == 0xfee94248);
+    assert(w[19] == 0xde8ebe96);
+    assert(w[20] == 0xb5a9328a);
+    assert(w[23] == 0x2f6c79b3);
+    assert(w[24] == 0x812c81ad);
+    assert(w[25] == 0xdadf48ba);
+    assert(w[26] == 0x24360af2);
+    assert(w[27] == 0xfab8b464);
+    assert(w[28] == 0x98c5bfc9);
+    assert(w[29] == 0xbebd198e);
+    assert(w[30] == 0x268c3ba7);
+    assert(w[31] == 0x09e04214);
+    assert(w[32] == 0x68007bac);
+    assert(w[33] == 0xb2df3316);
+    assert(w[34] == 0x96e939e4);
+    assert(w[35] == 0x6c518d80);
+    assert(w[36] == 0xc814e204);
+    assert(w[37] == 0x76a9fb8a);
+    assert(w[38] == 0x5025c02d);
+    assert(w[39] == 0x59c58239);
+    assert(w[40] == 0xde136967);
+    assert(w[41] == 0x6ccc5a71);
+    assert(w[42] == 0xfa256395);
+    assert(w[43] == 0x9674ee15);
+    assert(w[44] == 0x5886ca5d);
+    assert(w[45] == 0x2e2f31d7);
+    assert(w[46] == 0x7e0af1fa);
+    assert(w[47] == 0x27cf73c3);
+    assert(w[48] == 0x749c47ab);
+    assert(w[49] == 0x18501dda);
+    assert(w[50] == 0xe2757e4f);
+    assert(w[51] == 0x7401905a);
+    assert(w[52] == 0xcafaaae3);
+    assert(w[53] == 0xe4d59b34);
+    assert(w[54] == 0x9adf6ace);
+    assert(w[55] == 0xbd10190d);
+    assert(w[56] == 0xfe4890d1);
+    assert(w[57] == 0xe6188d0b);
+    assert(w[58] == 0x046df344);
+    assert(w[59] == 0x706c631e);
     free((void *)w);
 }
 #endif
