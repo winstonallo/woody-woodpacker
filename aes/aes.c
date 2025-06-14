@@ -172,6 +172,16 @@ KeyExpansion(const uint32_t key[8]) {
     return w;
 }
 
+uint8_t *
+InvCipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
+    uint8_t *state = malloc(16 * sizeof(uint8_t)); // TODO: put this on stack
+    memcpy(state, in, 16);
+
+    AddRoundKey((uint32_t *)state, &w[4 * Nr]);
+
+    return state;
+}
+
 #define TEST 1
 #ifdef TEST
 #include <assert.h>
