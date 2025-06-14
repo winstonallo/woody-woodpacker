@@ -126,6 +126,32 @@ ShiftRows(uint8_t state[16]) {
     state[3] = temp;
 }
 
+// Column-Major: s[row, col] = s[row + 4col]
+__attribute__((always_inline)) static void
+InvShiftRows(uint8_t state[16]) {
+    // shift right by 1 (row 1)
+    uint8_t temp = state[13];
+    state[13] = state[9];
+    state[9] = state[5];
+    state[5] = state[1];
+    state[1] = temp;
+
+    // shift right by 2 (row 2) => swap pairs
+    temp = state[2];
+    state[2] = state[10];
+    state[10] = temp;
+    temp = state[6];
+    state[6] = state[14];
+    state[14] = temp;
+
+    // shift right by 3 (row 3) => shift left by 1
+    temp = state[3];
+    state[3] = state[15];
+    state[15] = state[11];
+    state[11] = state[7];
+    state[7] = temp;
+}
+
 __attribute__((always_inline)) static void
 MixColumns(uint8_t state[16]) {
     uint8_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
