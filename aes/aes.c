@@ -95,6 +95,10 @@ xTimesx(uint8_t a, uint8_t x) {
 
 #define Mul02(b) xTimes(b)
 #define Mul03(b) xTimes(b) ^ b
+#define Mul09(b) xTimes(xTimes(xTimes(b))) ^ b
+#define Mul0b(b) xTimes(xTimes(xTimes(b))) ^ xTimes(b) ^ b
+#define Mul0d(b) xTimes(xTimes(xTimes(b))) ^ xTimes(xTimes(b)) ^ b
+#define Mul0e(b) xTimes(xTimes(xTimes(b))) ^ xTimes(xTimes(b)) ^ xTimes(b)
 
 // Column-Major: s[row, col] = s[row + 4col]
 __attribute__((always_inline)) static void
