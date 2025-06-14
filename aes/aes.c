@@ -1,4 +1,6 @@
 #include <stdint.h>
+#include <stdlib.h>
+#include <string.h>
 
 static const uint8_t SBoxArray[16][16] = {
     {0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76},
@@ -109,11 +111,33 @@ MixColumns(uint8_t state[16]) {
 }
 
 static void
-AddRoundKey(uint32_t *state, uint32_t *key, uint8_t round) {
-    state[0] ^= key[0];
-    state[1] ^= key[1];
-    state[2] ^= key[2];
-    state[3] ^= key[3];
+AddRoundKey(uint32_t *state, uint32_t *w) {
+    state[0] ^= w[0];
+    state[1] ^= w[1];
+    state[2] ^= w[2];
+    state[3] ^= w[3];
+}
+
+// Nr = 14 for AES-256
+static uint8_t *
+Cipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
+    uint8_t *state = malloc(16 * sizeof(uint8_t)); // TODO: put this on stack
+    memcpy(state, in, 16);                         // TODO: use own memcpy/hardcode
+
+    AddRoundKey((uint32_t *)state, w);
+
+    for (int round = 1; round < Nr - 1; ++round) {
+        SubBytes(state);
+        ShiftRows(state);
+        MixColumns(state);
+        AddRoundKey((uint32_t *)state, &w[4 * round]);
+    }
+
+    SubBytes(state);
+    ShiftRows(state);
+    AddRoundKey((uint32_t *)state, &w[4 * Nr]);
+
+    return state;
 }
 
 #ifdef TEST
