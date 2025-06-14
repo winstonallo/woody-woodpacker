@@ -22,7 +22,9 @@ static const uint8_t SBoxArray[16][16] = {
 };
 #define SBox(b) SBoxArray[(b & 0xF0) >> 4][b & 0x0F]
 
-#define ROTL_32(val, by) (((by) & 31) == 0 ? (val) : ((val) << ((by) & 31)) | ((val) >> (32 - ((by) & 31))))
+static const uint32_t Rcon[10] = {0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x1b000000, 0x36000000};
+
+#define RotWord(val) ((val << 8) | (val >> 24))
 
 __attribute__((always_inline)) static void
 SubBytes(uint8_t state[16]) {
@@ -168,5 +170,7 @@ main() {
     assert(state[7] == 3);
     assert(state[11] == 7);
     assert(state[15] == 11);
+
+    assert(RotWord(0xaabbccdd) == 0xbbccddaa);
 }
 #endif
