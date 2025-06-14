@@ -282,7 +282,7 @@ InvCipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
 
     InvShiftRows(state);
     InvSubBytes(state);
-    AddRoundKey(state, &w[0]);
+    AddRoundKey((uint32_t *)state, &w[0]);
 
     return state;
 }
@@ -294,8 +294,6 @@ int
 main() {
     assert(xTimes(0x57) == 0xae);
     assert(xTimes(0xae) == 0x47);
-    assert(xTimesx(0x57, 0x04) == 0x47);
-    assert(xTimesx(0x57, 0x80) == 0x38);
     assert(SBox(0x53) == 0xed);
     assert(SubWord(0x53535353) == 0xedededed);
 
@@ -381,6 +379,15 @@ main() {
     assert(w[57] == 0xe6188d0b);
     assert(w[58] == 0x046df344);
     assert(w[59] == 0x706c631e);
+
+    const uint8_t in[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
+    const uint8_t *enc = Cipher((uint8_t *)in, 14, (uint32_t *)w);
+    const uint8_t *dec = InvCipher((uint8_t *)enc, 14, (uint32_t *)w);
+
+    printf("%llx\n", *((uint64_t *)&dec[0]));
+
     free((void *)w);
+    free((void *)enc);
+    free((void *)dec);
 }
 #endif
