@@ -63,6 +63,13 @@ SubBytes(uint8_t state[16]) {
     }
 }
 
+__attribute__((always_inline)) static inline void
+InvSubBytes(uint8_t state[16]) {
+    for (int i = 0; i < 16; ++i) {
+        state[i] = InvSBox(state[i]);
+    }
+}
+
 __attribute__((always_inline)) static uint8_t
 xTimes(uint8_t b) {
     if ((b & 0x80) == 0) {
