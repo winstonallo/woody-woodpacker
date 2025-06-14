@@ -225,7 +225,7 @@ Cipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
 
     AddRoundKey((uint32_t *)state, w);
 
-    for (int round = 1; round < Nr - 1; ++round) {
+    for (int round = 1; round < Nr; ++round) {
         SubBytes(state);
         ShiftRows(state);
         MixColumns(state);
