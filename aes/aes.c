@@ -26,10 +26,15 @@ static const uint8_t SBoxArray[16][16] = {
 static const uint32_t Rcon[11] = {0x00000000, 0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000,
                                   0x20000000, 0x40000000, 0x80000000, 0x1b000000, 0x36000000};
 
-// val: uint32_t
-#define RotWord(val) ((val << 8) | (val >> 24))
-// val: uint32_t
-#define SubWord(val) (uint32_t)((SBox(val & 0xFF)) | (SBox(((val >> 8) & 0xFF)) << 8) | (SBox(((val >> 16) & 0xFF)) << 16) | (SBox(((val >> 24) & 0xFF)) << 24))
+__attribute__((always_inline)) static inline uint32_t
+RotWord(const uint32_t val) {
+    return (val << 8) | (val >> 24);
+}
+
+__attribute__((always_inline)) static inline uint32_t
+SubWord(const uint32_t val) {
+    return (uint32_t)((SBox(val & 0xFF)) | (SBox(((val >> 8) & 0xFF)) << 8) | (SBox(((val >> 16) & 0xFF)) << 16) | (SBox(((val >> 24) & 0xFF)) << 24));
+}
 
 __attribute__((always_inline)) static void
 SubBytes(uint8_t state[16]) {
@@ -202,8 +207,6 @@ main() {
 
     const uint32_t input_key[8] = {0x603deb10, 0x15ca71be, 0x2b73aef0, 0x857d7781, 0x1f352c07, 0x3b6108d7, 0x2d9810a3, 0x0914dff4};
     uint32_t *w = KeyExpansion(input_key);
-
-    uint32_t temp = 0x0914dff4;
 
     assert(w[0] == 0x603deb10);
     assert(w[1] == 0x15ca71be);
