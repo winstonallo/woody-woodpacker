@@ -24,14 +24,14 @@ static const uint8_t SBoxArray[16][16] = {
 
 #define ROTL_32(val, by) (((by) & 31) == 0 ? (val) : ((val) << ((by) & 31)) | ((val) >> (32 - ((by) & 31))))
 
-static void
+__attribute__((always_inline)) static void
 SubBytes(uint8_t state[16]) {
     for (int i = 0; i < 16; ++i) {
         state[i] = SBox(state[i]);
     }
 }
 
-static uint8_t
+__attribute__((always_inline)) static uint8_t
 xTimes(uint8_t b) {
     if ((b & 0x80) == 0) {
         return b << 1;
@@ -40,7 +40,7 @@ xTimes(uint8_t b) {
     return (b << 1) ^ 0b00011011; // x^4 + x^3 + x + 1
 }
 
-static uint8_t
+__attribute__((always_inline)) static uint8_t
 xTimesx(uint8_t a, uint8_t x) {
     uint8_t res = 0;
 
@@ -58,7 +58,7 @@ xTimesx(uint8_t a, uint8_t x) {
 #define Mul03(b) xTimes(b) ^ b
 
 // Column-Major: s[row, col] = s[row + 4col]
-static void
+__attribute__((always_inline)) static void
 ShiftRows(uint8_t state[16]) {
     // Row 1: shift left by 1
     uint8_t temp = state[1];
@@ -83,7 +83,7 @@ ShiftRows(uint8_t state[16]) {
     state[3] = temp;
 }
 
-static void
+__attribute__((always_inline)) static void
 MixColumns(uint8_t state[16]) {
     uint8_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
     state[0] = Mul02(s0) ^ Mul03(s1) ^ s2 ^ s3;
@@ -110,7 +110,7 @@ MixColumns(uint8_t state[16]) {
     state[15] = Mul03(s12) ^ s13 ^ s14 ^ Mul02(s15);
 }
 
-static void
+__attribute__((always_inline)) static void
 AddRoundKey(uint32_t *state, uint32_t *w) {
     state[0] ^= w[0];
     state[1] ^= w[1];
