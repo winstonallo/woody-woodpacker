@@ -109,9 +109,11 @@ MixColumns(uint8_t state[16]) {
 }
 
 static void
-AddRoundKey(uint8_t state[16], uint32_t key[8], uint8_t round) {
-
-    *((uint32_t *)&state[0]) = *((uint32_t *)&state[0]) ^ key[4 * round];
+AddRoundKey(uint32_t *state, uint32_t *key, uint8_t round) {
+    state[0] ^= key[0];
+    state[1] ^= key[1];
+    state[2] ^= key[2];
+    state[3] ^= key[3];
 }
 
 #ifdef TEST
