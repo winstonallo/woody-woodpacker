@@ -1,4 +1,5 @@
 #include <stdint.h>
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
@@ -145,6 +146,26 @@ Cipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
     return state;
 }
 
+static uint32_t *
+KeyExpansion(const uint32_t key[8]) {
+    const uint8_t Nr = 14, Nk = 8;
+    uint32_t *w = malloc((4 * (Nr + 1)) * sizeof(uint32_t)); // TODO: put this on stack
+    for (int i = 0; i < Nk; ++i) {
+        w[i] = key[i];
+    }
+
+    for (int i = Nk; i <= 4 * Nr + 3; ++i) {
+        uint32_t temp = w[i - 1];
+        if (i % Nk == 0) {
+            temp = SubWord(RotWord(temp)) ^ Rcon[i / Nk];
+        } else if (Nk > 6 && i % Nk == 4) {
+            temp = SubWord(temp);
+        }
+        w[i] = w[i - Nk] ^ temp;
+    }
+    return w;
+}
+
 #define TEST 1
 #ifdef TEST
 #include <assert.h>
@@ -177,5 +198,21 @@ main() {
     assert(state[15] == 11);
 
     assert(RotWord(0xaabbccdd) == 0xbbccddaa);
+
+    const uint32_t input_key[8] = {0x603deb10, 0x15ca71be, 0x2b73aef0, 0x857d7781, 0x1f352c07, 0x3b6108d7, 0x2d9810a3, 0x0914dff4};
+    uint32_t *w = KeyExpansion(input_key);
+
+    uint32_t temp = 0x0914dff4;
+
+    assert(w[0] == 0x603deb10);
+    assert(w[1] == 0x15ca71be);
+    assert(w[2] == 0x2b73aef0);
+    assert(w[3] == 0x857d7781);
+    assert(w[4] == 0x1f352c07);
+    assert(w[5] == 0x3b6108d7);
+    assert(w[6] == 0x2d9810a3);
+    assert(w[7] == 0x0914dff4);
+    assert(w[8] == 0x9ba35411);
+    free((void *)w);
 }
 #endif
