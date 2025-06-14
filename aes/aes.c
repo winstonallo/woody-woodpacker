@@ -133,8 +133,11 @@ AddRoundKey(uint32_t *state, uint32_t *w) {
 // Nr = 14 for AES-256
 uint8_t *
 Cipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
-    uint8_t *state = malloc(16 * sizeof(uint8_t)); // TODO: put this on stack
-    memcpy(state, in, 16);                         // TODO: use own memcpy/hardcode
+    uint8_t *state = malloc(16 * sizeof(uint8_t));
+    if (state == NULL) {
+        return NULL;
+    }
+    memcpy(state, in, 16); // TODO: use own memcpy/hardcode
 
     AddRoundKey((uint32_t *)state, w);
 
@@ -155,7 +158,11 @@ Cipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
 static uint32_t *
 KeyExpansion(const uint32_t key[8]) {
     const uint8_t Nr = 14, Nk = 8;
-    uint32_t *w = malloc((4 * (Nr + 1)) * sizeof(uint32_t)); // TODO: put this on stack
+    uint32_t *w = malloc((4 * (Nr + 1)) * sizeof(uint32_t));
+    if (w == NULL) {
+        return NULL;
+    }
+
     for (int i = 0; i < Nk; ++i) {
         w[i] = key[i];
     }
@@ -174,7 +181,10 @@ KeyExpansion(const uint32_t key[8]) {
 
 uint8_t *
 InvCipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
-    uint8_t *state = malloc(16 * sizeof(uint8_t)); // TODO: put this on stack
+    uint8_t *const state = malloc(16 * sizeof(uint8_t));
+    if (state == NULL) {
+        return NULL;
+    }
     memcpy(state, in, 16);
 
     AddRoundKey((uint32_t *)state, &w[4 * Nr]);
