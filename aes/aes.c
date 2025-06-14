@@ -24,7 +24,10 @@ static const uint8_t SBoxArray[16][16] = {
 
 static const uint32_t Rcon[10] = {0x01000000, 0x02000000, 0x04000000, 0x08000000, 0x10000000, 0x20000000, 0x40000000, 0x80000000, 0x1b000000, 0x36000000};
 
+// val: uint32_t
 #define RotWord(val) ((val << 8) | (val >> 24))
+// val: uint32_t
+#define SubWord(val) (uint32_t)((SBox(val & 0xFF)) | (SBox(((val >> 8) & 0xFF)) << 8) | (SBox(((val >> 16) & 0xFF)) << 16) | (SBox(((val >> 24) & 0xFF)) << 24))
 
 __attribute__((always_inline)) static void
 SubBytes(uint8_t state[16]) {
@@ -142,6 +145,7 @@ Cipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
     return state;
 }
 
+#define TEST 1
 #ifdef TEST
 #include <assert.h>
 int
@@ -151,6 +155,7 @@ main() {
     assert(xTimesx(0x57, 0x04) == 0x47);
     assert(xTimesx(0x57, 0x80) == 0x38);
     assert(SBox(0x53) == 0xed);
+    assert(SubWord(0x53535353) == 0xedededed);
 
     uint8_t state[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
     ShiftRows(state);
