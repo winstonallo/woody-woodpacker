@@ -189,6 +189,17 @@ InvCipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
 
     AddRoundKey((uint32_t *)state, &w[4 * Nr]);
 
+    for (int round = Nr - 1; round >= 1; --round) {
+        InvShiftRows(state);
+        InvSubBytes(state);
+        AddRoundKey((uint32_t *)state, &w[4 * round]);
+        InvMixColumns(state);
+    }
+
+    InvShiftRows(state);
+    InvSubBytes(state);
+    AddRoundKey(state, &w[0]);
+
     return state;
 }
 
