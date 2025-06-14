@@ -180,6 +180,33 @@ MixColumns(uint8_t state[16]) {
 }
 
 __attribute__((always_inline)) static void
+InvMixColumns(uint8_t state[16]) {
+    uint8_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
+    state[0] = Mul0e(s0) ^ Mul0b(s1) ^ Mul0d(s2) ^ Mul09(s3);
+    state[1] = Mul09(s0) ^ Mul0e(s1) ^ Mul0b(s2) ^ Mul0d(s3);
+    state[2] = Mul0d(s0) ^ Mul09(s1) ^ Mul0e(s2) ^ Mul0b(s3);
+    state[3] = Mul0b(s0) ^ Mul0d(s1) ^ Mul09(s2) ^ Mul0e(s3);
+
+    uint8_t s4 = state[4], s5 = state[5], s6 = state[6], s7 = state[7];
+    state[4] = Mul0e(s4) ^ Mul0b(s5) ^ Mul0d(s6) ^ Mul09(s7);
+    state[5] = Mul09(s4) ^ Mul0e(s5) ^ Mul0b(s6) ^ Mul0d(s7);
+    state[6] = Mul0d(s4) ^ Mul09(s5) ^ Mul0e(s6) ^ Mul0b(s7);
+    state[7] = Mul0b(s4) ^ Mul0d(s5) ^ Mul09(s6) ^ Mul0e(s7);
+
+    uint8_t s8 = state[8], s9 = state[9], s10 = state[10], s11 = state[11];
+    state[8] = Mul0e(s8) ^ Mul0b(s9) ^ Mul0d(s10) ^ Mul09(s11);
+    state[9] = Mul09(s8) ^ Mul0e(s9) ^ Mul0b(s10) ^ Mul0d(s11);
+    state[10] = Mul0d(s8) ^ Mul09(s9) ^ Mul0e(s10) ^ Mul0b(s11);
+    state[11] = Mul0b(s8) ^ Mul0d(s9) ^ Mul09(s10) ^ Mul0e(s11);
+
+    uint8_t s12 = state[12], s13 = state[13], s14 = state[14], s15 = state[15];
+    state[12] = Mul0e(s12) ^ Mul0b(s13) ^ Mul0d(s14) ^ Mul09(s15);
+    state[13] = Mul09(s12) ^ Mul0e(s13) ^ Mul0b(s14) ^ Mul0d(s15);
+    state[14] = Mul0d(s12) ^ Mul09(s13) ^ Mul0e(s14) ^ Mul0b(s15);
+    state[15] = Mul0b(s12) ^ Mul0d(s13) ^ Mul09(s14) ^ Mul0e(s15);
+}
+
+__attribute__((always_inline)) static void
 AddRoundKey(uint32_t *state, uint32_t *w) {
     state[0] ^= w[0];
     state[1] ^= w[1];
