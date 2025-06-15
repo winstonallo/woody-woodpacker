@@ -103,14 +103,14 @@ xTimesx(uint8_t a, uint8_t x) {
 // Column-Major: s[row, col] = s[row + 4col]
 __attribute__((always_inline)) static void
 ShiftRows(uint8_t state[16]) {
-    // Row 1: shift left by 1
+    // shift left by 1 (row 1)
     uint8_t temp = state[1];
     state[1] = state[5];
     state[5] = state[9];
     state[9] = state[13];
     state[13] = temp;
 
-    // Row 2: shift left by 2 (swap pairs)
+    // shift left by 2 => swap pairs (row 2)
     temp = state[2];
     state[2] = state[10];
     state[10] = temp;
@@ -118,7 +118,7 @@ ShiftRows(uint8_t state[16]) {
     state[6] = state[14];
     state[14] = temp;
 
-    // Row 3: shift left by 3 (= shift right by 1)
+    // shift left by 3 => shift right by 1 (row 3)
     temp = state[15];
     state[15] = state[11];
     state[11] = state[7];
