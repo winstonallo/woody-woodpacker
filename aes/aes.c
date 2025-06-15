@@ -56,7 +56,7 @@ SubWord(const uint32_t val) {
     return (uint32_t)((SBox(val & 0xFF)) | (SBox(((val >> 8) & 0xFF)) << 8) | (SBox(((val >> 16) & 0xFF)) << 16) | (SBox(((val >> 24) & 0xFF)) << 24));
 }
 
-__attribute__((always_inline)) static void
+__attribute__((always_inline)) static inline void
 SubBytes(uint8_t state[16]) {
     for (int i = 0; i < 16; ++i) {
         state[i] = SBox(state[i]);
@@ -70,27 +70,13 @@ InvSubBytes(uint8_t state[16]) {
     }
 }
 
-__attribute__((always_inline)) static uint8_t
+__attribute__((always_inline)) static inline uint8_t
 xTimes(uint8_t b) {
     if ((b & 0x80) == 0) {
         return b << 1;
     }
 
     return (b << 1) ^ 0b00011011; // x^4 + x^3 + x + 1
-}
-
-__attribute__((always_inline)) static uint8_t
-xTimesx(uint8_t a, uint8_t x) {
-    uint8_t res = 0;
-
-    for (int i = 0; i < 8; ++i) {
-        if (x & 1) {
-            res ^= a;
-        }
-        x >>= 1;
-        a = xTimes(a);
-    }
-    return res;
 }
 
 #define Mul02(b) xTimes(b)
@@ -101,7 +87,7 @@ xTimesx(uint8_t a, uint8_t x) {
 #define Mul0e(b) xTimes(xTimes(xTimes(b))) ^ xTimes(xTimes(b)) ^ xTimes(b)
 
 // Column-Major: s[row, col] = s[row + 4col]
-__attribute__((always_inline)) static void
+__attribute__((always_inline)) static inline void
 ShiftRows(uint8_t state[16]) {
     // shift left by 1 (row 1)
     uint8_t temp = state[1];
@@ -127,7 +113,7 @@ ShiftRows(uint8_t state[16]) {
 }
 
 // Column-Major: s[row, col] = s[row + 4col]
-__attribute__((always_inline)) static void
+__attribute__((always_inline)) static inline void
 InvShiftRows(uint8_t state[16]) {
     // shift right by 1 (row 1)
     uint8_t temp = state[13];
@@ -152,7 +138,7 @@ InvShiftRows(uint8_t state[16]) {
     state[7] = temp;
 }
 
-__attribute__((always_inline)) static void
+__attribute__((always_inline)) static inline void
 MixColumns(uint8_t state[16]) {
     uint8_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
     state[0] = Mul02(s0) ^ Mul03(s1) ^ s2 ^ s3;
@@ -179,7 +165,7 @@ MixColumns(uint8_t state[16]) {
     state[15] = Mul03(s12) ^ s13 ^ s14 ^ Mul02(s15);
 }
 
-__attribute__((always_inline)) static void
+__attribute__((always_inline)) static inline void
 InvMixColumns(uint8_t state[16]) {
     uint8_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
     state[0] = Mul0e(s0) ^ Mul0b(s1) ^ Mul0d(s2) ^ Mul09(s3);
@@ -206,7 +192,7 @@ InvMixColumns(uint8_t state[16]) {
     state[15] = Mul0b(s12) ^ Mul0d(s13) ^ Mul09(s14) ^ Mul0e(s15);
 }
 
-__attribute__((always_inline)) static void
+__attribute__((always_inline)) static inline void
 AddRoundKey(uint32_t *state, uint32_t *w) {
     state[0] ^= w[0];
     state[1] ^= w[1];
