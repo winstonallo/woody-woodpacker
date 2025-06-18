@@ -1,6 +1,5 @@
 #include <stdint.h>
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
 
 static const uint8_t SBoxArray[16][16] = {
@@ -75,18 +74,17 @@ xTimes(uint8_t b) {
     if ((b & 0x80) == 0) {
         return b << 1;
     }
-
-    return (b << 1) ^ 0b00011011; // x^4 + x^3 + x + 1
+    return (b << 1) ^ 0x1B; // x^4 + x^3 + x + 1
 }
 
 #define Mul02(b) xTimes(b)
-#define Mul03(b) xTimes(b) ^ b
-#define Mul09(b) xTimes(xTimes(xTimes(b))) ^ b
-#define Mul0b(b) xTimes(xTimes(xTimes(b))) ^ xTimes(b) ^ b
-#define Mul0d(b) xTimes(xTimes(xTimes(b))) ^ xTimes(xTimes(b)) ^ b
-#define Mul0e(b) xTimes(xTimes(xTimes(b))) ^ xTimes(xTimes(b)) ^ xTimes(b)
+#define Mul03(b) (xTimes(b) ^ (b))
+#define Mul09(b) (xTimes(xTimes(xTimes(b))) ^ (b))
+#define Mul0b(b) (xTimes(xTimes(xTimes(b))) ^ xTimes(b) ^ (b))
+#define Mul0d(b) (xTimes(xTimes(xTimes(b))) ^ xTimes(xTimes(b)) ^ (b))
+#define Mul0e(b) (xTimes(xTimes(xTimes(b))) ^ xTimes(xTimes(b)) ^ xTimes(b))
 
-// Column-Major: s[row, col] = s[row + 4col]
+// Column-Major: s[row, col] = s[row + 4*col]
 __attribute__((always_inline)) static inline void
 ShiftRows(uint8_t state[16]) {
     // shift left by 1 (row 1)
@@ -112,7 +110,7 @@ ShiftRows(uint8_t state[16]) {
     state[3] = temp;
 }
 
-// Column-Major: s[row, col] = s[row + 4col]
+// Column-Major: s[row, col] = s[row + 4*col]
 __attribute__((always_inline)) static inline void
 InvShiftRows(uint8_t state[16]) {
     // shift right by 1 (row 1)
@@ -132,109 +130,82 @@ InvShiftRows(uint8_t state[16]) {
 
     // shift right by 3 (row 3) => shift left by 1
     temp = state[3];
-    state[3] = state[15];
-    state[15] = state[11];
-    state[11] = state[7];
-    state[7] = temp;
+    state[3] = state[7];
+    state[7] = state[11];
+    state[11] = state[15];
+    state[15] = temp;
 }
 
 __attribute__((always_inline)) static inline void
 MixColumns(uint8_t state[16]) {
-    uint8_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
-    state[0] = Mul02(s0) ^ Mul03(s1) ^ s2 ^ s3;
-    state[1] = s0 ^ Mul02(s1) ^ Mul03(s2) ^ s3;
-    state[2] = s0 ^ s1 ^ Mul02(s2) ^ Mul03(s3);
-    state[3] = Mul03(s0) ^ s1 ^ s2 ^ Mul02(s3);
+    for (int c = 0; c < 4; c++) {
+        uint8_t s0 = state[c * 4 + 0];
+        uint8_t s1 = state[c * 4 + 1];
+        uint8_t s2 = state[c * 4 + 2];
+        uint8_t s3 = state[c * 4 + 3];
 
-    uint8_t s4 = state[4], s5 = state[5], s6 = state[6], s7 = state[7];
-    state[4] = Mul02(s4) ^ Mul03(s5) ^ s6 ^ s7;
-    state[5] = s4 ^ Mul02(s5) ^ Mul03(s6) ^ s7;
-    state[6] = s4 ^ s5 ^ Mul02(s6) ^ Mul03(s7);
-    state[7] = Mul03(s4) ^ s5 ^ s6 ^ Mul02(s7);
-
-    uint8_t s8 = state[8], s9 = state[9], s10 = state[10], s11 = state[11];
-    state[8] = Mul02(s8) ^ Mul03(s9) ^ s10 ^ s11;
-    state[9] = s8 ^ Mul02(s9) ^ Mul03(s10) ^ s11;
-    state[10] = s8 ^ s9 ^ Mul02(s10) ^ Mul03(s11);
-    state[11] = Mul03(s8) ^ s9 ^ s10 ^ Mul02(s11);
-
-    uint8_t s12 = state[12], s13 = state[13], s14 = state[14], s15 = state[15];
-    state[12] = Mul02(s12) ^ Mul03(s13) ^ s14 ^ s15;
-    state[13] = s12 ^ Mul02(s13) ^ Mul03(s14) ^ s15;
-    state[14] = s12 ^ s13 ^ Mul02(s14) ^ Mul03(s15);
-    state[15] = Mul03(s12) ^ s13 ^ s14 ^ Mul02(s15);
+        state[c * 4 + 0] = Mul02(s0) ^ Mul03(s1) ^ s2 ^ s3;
+        state[c * 4 + 1] = s0 ^ Mul02(s1) ^ Mul03(s2) ^ s3;
+        state[c * 4 + 2] = s0 ^ s1 ^ Mul02(s2) ^ Mul03(s3);
+        state[c * 4 + 3] = Mul03(s0) ^ s1 ^ s2 ^ Mul02(s3);
+    }
 }
 
 __attribute__((always_inline)) static inline void
 InvMixColumns(uint8_t state[16]) {
-    uint8_t s0 = state[0], s1 = state[1], s2 = state[2], s3 = state[3];
-    state[0] = Mul0e(s0) ^ Mul0b(s1) ^ Mul0d(s2) ^ Mul09(s3);
-    state[1] = Mul09(s0) ^ Mul0e(s1) ^ Mul0b(s2) ^ Mul0d(s3);
-    state[2] = Mul0d(s0) ^ Mul09(s1) ^ Mul0e(s2) ^ Mul0b(s3);
-    state[3] = Mul0b(s0) ^ Mul0d(s1) ^ Mul09(s2) ^ Mul0e(s3);
+    for (int c = 0; c < 4; c++) {
+        uint8_t s0 = state[c * 4 + 0];
+        uint8_t s1 = state[c * 4 + 1];
+        uint8_t s2 = state[c * 4 + 2];
+        uint8_t s3 = state[c * 4 + 3];
 
-    uint8_t s4 = state[4], s5 = state[5], s6 = state[6], s7 = state[7];
-    state[4] = Mul0e(s4) ^ Mul0b(s5) ^ Mul0d(s6) ^ Mul09(s7);
-    state[5] = Mul09(s4) ^ Mul0e(s5) ^ Mul0b(s6) ^ Mul0d(s7);
-    state[6] = Mul0d(s4) ^ Mul09(s5) ^ Mul0e(s6) ^ Mul0b(s7);
-    state[7] = Mul0b(s4) ^ Mul0d(s5) ^ Mul09(s6) ^ Mul0e(s7);
-
-    uint8_t s8 = state[8], s9 = state[9], s10 = state[10], s11 = state[11];
-    state[8] = Mul0e(s8) ^ Mul0b(s9) ^ Mul0d(s10) ^ Mul09(s11);
-    state[9] = Mul09(s8) ^ Mul0e(s9) ^ Mul0b(s10) ^ Mul0d(s11);
-    state[10] = Mul0d(s8) ^ Mul09(s9) ^ Mul0e(s10) ^ Mul0b(s11);
-    state[11] = Mul0b(s8) ^ Mul0d(s9) ^ Mul09(s10) ^ Mul0e(s11);
-
-    uint8_t s12 = state[12], s13 = state[13], s14 = state[14], s15 = state[15];
-    state[12] = Mul0e(s12) ^ Mul0b(s13) ^ Mul0d(s14) ^ Mul09(s15);
-    state[13] = Mul09(s12) ^ Mul0e(s13) ^ Mul0b(s14) ^ Mul0d(s15);
-    state[14] = Mul0d(s12) ^ Mul09(s13) ^ Mul0e(s14) ^ Mul0b(s15);
-    state[15] = Mul0b(s12) ^ Mul0d(s13) ^ Mul09(s14) ^ Mul0e(s15);
+        state[c * 4 + 0] = Mul0e(s0) ^ Mul0b(s1) ^ Mul0d(s2) ^ Mul09(s3);
+        state[c * 4 + 1] = Mul09(s0) ^ Mul0e(s1) ^ Mul0b(s2) ^ Mul0d(s3);
+        state[c * 4 + 2] = Mul0d(s0) ^ Mul09(s1) ^ Mul0e(s2) ^ Mul0b(s3);
+        state[c * 4 + 3] = Mul0b(s0) ^ Mul0d(s1) ^ Mul09(s2) ^ Mul0e(s3);
+    }
 }
 
 __attribute__((always_inline)) static inline void
-AddRoundKey(uint32_t *state, uint32_t *w) {
-    state[0] ^= w[0];
-    state[1] ^= w[1];
-    state[2] ^= w[2];
-    state[3] ^= w[3];
+AddRoundKey(uint8_t state[16], uint32_t *w) {
+    for (int c = 0; c < 4; c++) {
+        uint32_t word = w[c];
+        state[c * 4 + 0] ^= (word >> 24) & 0xFF;
+        state[c * 4 + 1] ^= (word >> 16) & 0xFF;
+        state[c * 4 + 2] ^= (word >> 8) & 0xFF;
+        state[c * 4 + 3] ^= word & 0xFF;
+    }
 }
 
 // Nr = 14 for AES-256
 uint8_t *
-Cipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
-    uint8_t *state = malloc(16 * sizeof(uint8_t));
-    if (state == NULL) {
-        return NULL;
-    }
-    memcpy(state, in, 16); // TODO: use own memcpy/hardcode
+Cipher(const uint8_t *in, uint8_t *const out, uint8_t Nr, uint32_t *w) {
+    uint8_t *const state = out;
+    memcpy(state, in, 16);
 
-    AddRoundKey((uint32_t *)state, w);
+    AddRoundKey(state, w);
 
     for (int round = 1; round < Nr; ++round) {
         SubBytes(state);
         ShiftRows(state);
         MixColumns(state);
-        AddRoundKey((uint32_t *)state, &w[4 * round]);
+        AddRoundKey(state, &w[4 * round]);
     }
 
     SubBytes(state);
     ShiftRows(state);
-    AddRoundKey((uint32_t *)state, &w[4 * Nr]);
+    AddRoundKey(state, &w[4 * Nr]);
 
     return state;
 }
 
-static uint32_t *
-KeyExpansion(const uint32_t key[8]) {
+uint32_t *
+KeyExpansion(const uint8_t key[32], uint32_t *const out) {
     const uint8_t Nr = 14, Nk = 8;
-    uint32_t *w = malloc((4 * (Nr + 1)) * sizeof(uint32_t));
-    if (w == NULL) {
-        return NULL;
-    }
+    uint32_t *const w = out;
 
     for (int i = 0; i < Nk; ++i) {
-        w[i] = key[i];
+        w[i] = ((uint32_t)key[4 * i] << 24) | ((uint32_t)key[4 * i + 1] << 16) | ((uint32_t)key[4 * i + 2] << 8) | ((uint32_t)key[4 * i + 3]);
     }
 
     for (int i = Nk; i <= 4 * Nr + 3; ++i) {
@@ -250,32 +221,40 @@ KeyExpansion(const uint32_t key[8]) {
 }
 
 uint8_t *
-InvCipher(uint8_t *in, uint8_t Nr, uint32_t *w) {
-    uint8_t *const state = malloc(16 * sizeof(uint8_t));
-    if (state == NULL) {
-        return NULL;
-    }
+InvCipher(uint8_t *in, uint8_t *const out, uint8_t Nr, uint32_t *w) {
+    uint8_t *const state = out;
     memcpy(state, in, 16);
 
-    AddRoundKey((uint32_t *)state, &w[4 * Nr]);
+    AddRoundKey(state, &w[4 * Nr]);
 
     for (int round = Nr - 1; round >= 1; --round) {
         InvShiftRows(state);
         InvSubBytes(state);
-        AddRoundKey((uint32_t *)state, &w[4 * round]);
+        AddRoundKey(state, &w[4 * round]);
         InvMixColumns(state);
     }
 
     InvShiftRows(state);
     InvSubBytes(state);
-    AddRoundKey((uint32_t *)state, &w[0]);
+    AddRoundKey(state, &w[0]);
 
     return state;
 }
 
 #define TEST 1
 #ifdef TEST
+
 #include <assert.h>
+
+void
+print_hex(const char *label, const uint8_t *data, int len) {
+    printf("%s: ", label);
+    for (int i = 0; i < len; i++) {
+        printf("%02x", data[i]);
+    }
+    printf("\n");
+}
+
 int
 main() {
     assert(xTimes(0x57) == 0xae);
@@ -283,97 +262,32 @@ main() {
     assert(SBox(0x53) == 0xed);
     assert(SubWord(0x53535353) == 0xedededed);
 
-    uint8_t state[16] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15};
-    ShiftRows(state);
-    assert(state[0] == 0);
-    assert(state[4] == 4);
-    assert(state[8] == 8);
-    assert(state[12] == 12);
-    assert(state[1] == 5);
-    assert(state[5] == 9);
-    assert(state[9] == 13);
-    assert(state[13] == 1);
-    assert(state[2] == 10);
-    assert(state[6] == 14);
-    assert(state[10] == 2);
-    assert(state[14] == 6);
-    assert(state[3] == 15);
-    assert(state[7] == 3);
-    assert(state[11] == 7);
-    assert(state[15] == 11);
+    // NIST FIPS 197 Appendix A.3
+    const uint8_t test_key[32] = {0x60, 0x3d, 0xeb, 0x10, 0x15, 0xca, 0x71, 0xbe, 0x2b, 0x73, 0xae, 0xf0, 0x85, 0x7d, 0x77, 0x81,
+                                  0x1f, 0x35, 0x2c, 0x07, 0x3b, 0x61, 0x08, 0xd7, 0x2d, 0x98, 0x10, 0xa3, 0x09, 0x14, 0xdf, 0xf4};
 
-    assert(RotWord(0xaabbccdd) == 0xbbccddaa);
-
-    const uint32_t input_key[8] = {0x603deb10, 0x15ca71be, 0x2b73aef0, 0x857d7781, 0x1f352c07, 0x3b6108d7, 0x2d9810a3, 0x0914dff4};
-    uint32_t *w = KeyExpansion(input_key);
+    uint32_t w[(4 * (14 + 1)) * sizeof(uint32_t)] = {0};
+    KeyExpansion(test_key, w);
 
     assert(w[0] == 0x603deb10);
     assert(w[1] == 0x15ca71be);
-    assert(w[2] == 0x2b73aef0);
-    assert(w[3] == 0x857d7781);
-    assert(w[4] == 0x1f352c07);
-    assert(w[5] == 0x3b6108d7);
-    assert(w[6] == 0x2d9810a3);
-    assert(w[7] == 0x0914dff4);
     assert(w[8] == 0x9ba35411);
-    assert(w[9] == 0x8e6925af);
-    assert(w[10] == 0xa51a8b5f);
-    assert(w[11] == 0x2067fcde);
-    assert(w[12] == 0xa8b09c1a);
-    assert(w[13] == 0x93d194cd);
-    assert(w[14] == 0xbe49846e);
-    assert(w[15] == 0xb75d5b9a);
-    assert(w[16] == 0xd59aecb8);
-    assert(w[17] == 0x5bf3c917);
-    assert(w[18] == 0xfee94248);
-    assert(w[19] == 0xde8ebe96);
-    assert(w[20] == 0xb5a9328a);
-    assert(w[23] == 0x2f6c79b3);
-    assert(w[24] == 0x812c81ad);
-    assert(w[25] == 0xdadf48ba);
-    assert(w[26] == 0x24360af2);
-    assert(w[27] == 0xfab8b464);
-    assert(w[28] == 0x98c5bfc9);
-    assert(w[29] == 0xbebd198e);
-    assert(w[30] == 0x268c3ba7);
-    assert(w[31] == 0x09e04214);
-    assert(w[32] == 0x68007bac);
-    assert(w[33] == 0xb2df3316);
-    assert(w[34] == 0x96e939e4);
-    assert(w[35] == 0x6c518d80);
-    assert(w[36] == 0xc814e204);
-    assert(w[37] == 0x76a9fb8a);
-    assert(w[38] == 0x5025c02d);
-    assert(w[39] == 0x59c58239);
-    assert(w[40] == 0xde136967);
-    assert(w[41] == 0x6ccc5a71);
-    assert(w[42] == 0xfa256395);
-    assert(w[43] == 0x9674ee15);
-    assert(w[44] == 0x5886ca5d);
-    assert(w[45] == 0x2e2f31d7);
-    assert(w[46] == 0x7e0af1fa);
-    assert(w[47] == 0x27cf73c3);
-    assert(w[48] == 0x749c47ab);
-    assert(w[49] == 0x18501dda);
-    assert(w[50] == 0xe2757e4f);
-    assert(w[51] == 0x7401905a);
-    assert(w[52] == 0xcafaaae3);
-    assert(w[53] == 0xe4d59b34);
-    assert(w[54] == 0x9adf6ace);
-    assert(w[55] == 0xbd10190d);
-    assert(w[56] == 0xfe4890d1);
-    assert(w[57] == 0xe6188d0b);
-    assert(w[58] == 0x046df344);
     assert(w[59] == 0x706c631e);
 
-    const uint8_t in[16] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00};
-    const uint8_t *enc = Cipher((uint8_t *)in, 14, (uint32_t *)w);
-    const uint8_t *dec = InvCipher((uint8_t *)enc, 14, (uint32_t *)w);
+    const uint8_t plaintext[16] = "Hello, World!!\n";
 
-    printf("%llx\n", *((uint64_t *)&dec[0]));
+    printf("Plaintext: %s", plaintext);
 
-    free((void *)w);
-    free((void *)enc);
-    free((void *)dec);
+    uint8_t enc[128 / 8] = {0};
+    Cipher((uint8_t *)plaintext, enc, 14, w);
+    print_hex("Ciphertext", enc, 16);
+
+    uint8_t dec[128 / 8] = {0};
+    InvCipher(enc, dec, 14, w);
+    printf("Decrypted: %s", dec);
+
+    for (int i = 0; i < 16; i++) {
+        assert(dec[i] == plaintext[i]);
+    }
 }
 #endif
