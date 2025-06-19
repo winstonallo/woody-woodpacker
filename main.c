@@ -180,8 +180,8 @@ int elf64_ident_check(const Elf64_Ehdr *header)
     if (header->e_ident[EI_VERSION] != EV_CURRENT)
         return 4;
 
-    for (int i = EI_PAD; i < sizeof(header); i++)
-        if (header->e_ident[i] != 0)
-            return 5;
+    for (int i = EI_PAD; i < sizeof(*header); i++) {
+        if (header->e_ident[i] != 0) return 5;
+    }
     return 0;
 }
