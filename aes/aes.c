@@ -204,7 +204,7 @@ __CopyState(uint8_t in[16], uint8_t out[16]) {
 uint8_t *
 Cipher(const uint8_t *in, uint8_t *const out, uint32_t *w) {
     uint8_t *const state = out;
-    memcpy(state, in, 16);
+    __CopyState((uint8_t *)in, out);
 
     AddRoundKey(state, w);
 
@@ -245,7 +245,7 @@ KeyExpansion(const uint8_t key[32], uint32_t *const out) {
 uint8_t *
 InvCipher(uint8_t *in, uint8_t *const out, uint32_t *w) {
     uint8_t *const state = out;
-    memcpy(state, in, 16);
+    __CopyState((uint8_t *)in, out);
 
     AddRoundKey(state, &w[4 * Nr]);
 
