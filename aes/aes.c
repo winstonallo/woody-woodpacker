@@ -1,6 +1,4 @@
 #include <stdint.h>
-#include <stdio.h>
-#include <string.h>
 
 #define Nr 14
 #define Nk 8
@@ -263,10 +261,9 @@ InvCipher(uint8_t *in, uint8_t *const out, uint32_t *w) {
     return state;
 }
 
-#define TEST 1
-#ifdef TEST
-
+#if TEST == 1
 #include <assert.h>
+#include <stdio.h>
 
 void
 print_hex(const char *label, const uint8_t *data, int len) {
@@ -298,15 +295,11 @@ main() {
 
     const uint8_t plaintext[16] = "Hello, World!!\n";
 
-    printf("Plaintext: %s", plaintext);
-
     uint8_t enc[128 / 8] = {0};
     Cipher((uint8_t *)plaintext, enc, w);
-    print_hex("Ciphertext", enc, 16);
 
     uint8_t dec[128 / 8] = {0};
     InvCipher(enc, dec, w);
-    printf("Decrypted: %s", dec);
 
     for (int i = 0; i < 16; i++) {
         assert(dec[i] == plaintext[i]);
