@@ -2,6 +2,9 @@
 #include <stdio.h>
 #include <string.h>
 
+#define Nr 14
+#define Nk 8
+
 static const uint8_t SBoxArray[16][16] = {
     {0x63, 0x7c, 0x77, 0x7b, 0xf2, 0x6b, 0x6f, 0xc5, 0x30, 0x01, 0x67, 0x2b, 0xfe, 0xd7, 0xab, 0x76},
     {0xca, 0x82, 0xc9, 0x7d, 0xfa, 0x59, 0x47, 0xf0, 0xad, 0xd4, 0xa2, 0xaf, 0x9c, 0xa4, 0x72, 0xc0},
@@ -179,7 +182,7 @@ AddRoundKey(uint8_t state[16], uint32_t *w) {
 
 // Nr = 14 for AES-256
 uint8_t *
-Cipher(const uint8_t *in, uint8_t *const out, uint8_t Nr, uint32_t *w) {
+Cipher(const uint8_t *in, uint8_t *const out, uint32_t *w) {
     uint8_t *const state = out;
     memcpy(state, in, 16);
 
@@ -201,7 +204,6 @@ Cipher(const uint8_t *in, uint8_t *const out, uint8_t Nr, uint32_t *w) {
 
 uint32_t *
 KeyExpansion(const uint8_t key[32], uint32_t *const out) {
-    const uint8_t Nr = 14, Nk = 8;
     uint32_t *const w = out;
 
     for (int i = 0; i < Nk; ++i) {
@@ -221,7 +223,7 @@ KeyExpansion(const uint8_t key[32], uint32_t *const out) {
 }
 
 uint8_t *
-InvCipher(uint8_t *in, uint8_t *const out, uint8_t Nr, uint32_t *w) {
+InvCipher(uint8_t *in, uint8_t *const out, uint32_t *w) {
     uint8_t *const state = out;
     memcpy(state, in, 16);
 
@@ -279,11 +281,11 @@ main() {
     printf("Plaintext: %s", plaintext);
 
     uint8_t enc[128 / 8] = {0};
-    Cipher((uint8_t *)plaintext, enc, 14, w);
+    Cipher((uint8_t *)plaintext, enc, w);
     print_hex("Ciphertext", enc, 16);
 
     uint8_t dec[128 / 8] = {0};
-    InvCipher(enc, dec, 14, w);
+    InvCipher(enc, dec, w);
     printf("Decrypted: %s", dec);
 
     for (int i = 0; i < 16; i++) {
