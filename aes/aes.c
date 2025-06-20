@@ -200,7 +200,7 @@ __CopyState(uint8_t in[16], uint8_t out[16]) {
 }
 
 // Nr = 14 for AES-256
-uint8_t *
+__attribute__((always_inline)) static inline uint8_t *
 Cipher(const uint8_t *in, uint8_t *const out, uint32_t *w) {
     uint8_t *const state = out;
     __CopyState((uint8_t *)in, out);
@@ -221,7 +221,7 @@ Cipher(const uint8_t *in, uint8_t *const out, uint32_t *w) {
     return state;
 }
 
-uint32_t *
+__attribute__((always_inline)) static inline uint32_t *
 KeyExpansion(const uint8_t key[32], uint32_t *const out) {
     uint32_t *const w = out;
 
@@ -241,7 +241,7 @@ KeyExpansion(const uint8_t key[32], uint32_t *const out) {
     return w;
 }
 
-uint8_t *
+__attribute__((always_inline)) static inline uint8_t *
 InvCipher(uint8_t *in, uint8_t *const out, uint32_t *w) {
     uint8_t *const state = out;
     __CopyState((uint8_t *)in, out);
