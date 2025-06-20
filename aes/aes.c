@@ -1,3 +1,4 @@
+#include "aes.h"
 #include <stdint.h>
 
 #define Nr 14
@@ -259,6 +260,16 @@ InvCipher(uint8_t *in, uint8_t *const out, uint32_t *w) {
     AddRoundKey(state, &w[0]);
 
     return state;
+}
+
+Aes256Data *
+Aes256_ECB_Encrypt(Aes256Data *data) {
+    return data;
+}
+
+Aes256Data *
+Aes256_ECB_Decrypt(Aes256Data *data) {
+    return data;
 }
 
 #if TEST == 1
