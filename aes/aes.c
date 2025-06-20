@@ -1,5 +1,7 @@
 #include "aes.h"
+#include "utils.h"
 #include <stdint.h>
+#include <unistd.h>
 
 #define Nr 14
 #define Nk 8
@@ -262,16 +264,50 @@ InvCipher(uint8_t *in, uint8_t *const out, uint32_t *w) {
     return state;
 }
 
+#define AES256_BLOCK_SIZE_BYTES 16
+#define AES256_EXPANDED_KEY_SIZE_U32 (4 * (14 + 1))
+
 Aes256Data *
 Aes256_ECB_Encrypt(Aes256Data *data) {
+    size_t blocks = data->msg.len / 16;
+    if (data->msg.len % 16 != 0) {
+        blocks++;
+    }
+
+    uint32_t w[AES256_EXPANDED_KEY_SIZE_U32];
+    KeyExpansion(data->key, w);
+
+    for (int block_idx = 0; block_idx < blocks; ++block_idx) {
+        uint8_t buf[16] = {0};
+
+        Cipher(&data->msg.data[block_idx * 16], buf, w);
+        ft_memcpy(&data->msg.data[block_idx * 16], buf, 16);
+    }
+
     return data;
 }
 
 Aes256Data *
 Aes256_ECB_Decrypt(Aes256Data *data) {
+    size_t blocks = data->msg.len / 16;
+    if (data->msg.len % 16 != 0) {
+        blocks++;
+    }
+
+    uint32_t w[AES256_EXPANDED_KEY_SIZE_U32];
+    KeyExpansion(data->key, w);
+
+    for (int block_idx = 0; block_idx < blocks; ++block_idx) {
+        uint8_t buf[16] = {0};
+
+        InvCipher(&data->msg.data[block_idx * 16], buf, w);
+        ft_memcpy(&data->msg.data[block_idx * 16], buf, 16);
+    }
+
     return data;
 }
 
+#define TEST 1
 #if TEST == 1
 #include <assert.h>
 #include <stdio.h>
@@ -304,16 +340,18 @@ main() {
     assert(w[8] == 0x9ba35411);
     assert(w[59] == 0x706c631e);
 
-    const uint8_t plaintext[16] = "Hello, World!!\n";
+    const uint8_t plaintext[22] = "Hello, World!!\nArthur";
 
     uint8_t enc[128 / 8] = {0};
-    Cipher((uint8_t *)plaintext, enc, w);
+    Aes256Data data = {.msg.data = (uint8_t *)plaintext, .msg.len = sizeof(plaintext), .key = (uint8_t *)test_key};
+    Aes256_ECB_Encrypt(&data);
 
-    uint8_t dec[128 / 8] = {0};
-    InvCipher(enc, dec, w);
+    Aes256_ECB_Decrypt(&data);
 
-    for (int i = 0; i < 16; i++) {
-        assert(dec[i] == plaintext[i]);
+    write(STDOUT_FILENO, data.msg.data, 22);
+
+    for (int i = 0; i < 22; i++) {
+        assert(data.msg.data[i] == plaintext[i]);
     }
 }
 #endif
