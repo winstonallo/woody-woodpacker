@@ -9,7 +9,7 @@ typedef struct {
         uint8_t *data;
         size_t len;
     } msg;
-    uint8_t key[32];
+    uint8_t *key;
 } Aes256Data;
 
 Aes256Data *Aes256_ECB_Encrypt(Aes256Data *);
