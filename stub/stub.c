@@ -8,7 +8,7 @@ typedef struct {
 
 void
 _start(void) {
-    WoodyData woody_data = {.og_entry = 0x4242424242424242ULL};
+    WoodyData woody_data = {.og_entry = 0xDEADBEEFCAFEBABEULL};
 
     const char msg[] = "....WOODY....\n";
     syscall(SYS_write, 1, msg, sizeof(msg) - 1);
