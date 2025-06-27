@@ -21,6 +21,8 @@ typedef struct {
     size_t allocated;
 } Binary;
 
+
+
 void *alloc(size_t size);
 
 int elf64_ident_check(const Elf64_Ehdr *header);
@@ -95,29 +97,96 @@ main(int ac, char **av) {
         return 1;
     }
 
-    printf("Sections\n");
-
-    printf("Offset %lu\n", header->e_shoff);
-    printf("Number %i\n", header->e_shnum);
-
-    printf("Size of each entry %i\n", header->e_shentsize);
-
-    Elf64_Shdr *section_header;
+    // Find .text section header
+    Elf64_Shdr *section_header_text;
 
     for (int i = 0; i < header->e_shnum; i++) {
-        section_header = (Elf64_Shdr *)&binary.data[header->e_shoff + (i * sizeof(Elf64_Shdr))];
+        section_header_text = (Elf64_Shdr *)&binary.data[header->e_shoff + (i * sizeof(Elf64_Shdr))];
 
-        if (section_header->sh_addr == header->e_entry) break;
+        if (section_header_text->sh_addr == header->e_entry) break;
     }
 
-    printf("section header size: %lx\n", section_header->sh_size);
+    Elf64_Phdr *program_header;
+    for (int i = 0; i < header->e_phnum; i++) {
+        program_header = (Elf64_Phdr*)&binary.data[header->e_phoff + (i * sizeof(Elf64_Phdr))];
 
-    unsigned char exit_code_4_shellcode[] = {
-        0x48, 0xc7, 0xc0, 0x3c, 0x00, 0x00, 0x00, // mov rax, 60
-        0x48, 0xc7, 0xc7, 0x04, 0x00, 0x00, 0x00, // mov rdi, 4
-        0x0f, 0x05                                // syscall
-    };
-    memcpy(binary.data + section_header->sh_offset, exit_code_4_shellcode, sizeof(exit_code_4_shellcode));
+        uint64_t start = program_header->p_vaddr;
+        uint64_t end = program_header->p_vaddr + program_header->p_filesz;
+
+        if (start <= header->e_entry && end > header->e_entry) break;
+        program_header = 0;
+    }
+
+    if (program_header == 0)
+    {
+        printf("can't find dont'want to write error message");
+        return 1;
+    }
+    
+
+
+
+
+
+    int f = 0;
+
+    uint64_t next_section_start = 0;
+    uint64_t last_section_end = program_header->p_offset;
+
+    uint64_t code_cave_biggest_start = 0;
+    uint64_t code_cave_biggest_end = 0;
+    for (int i = 0; i < header->e_shnum; i++) {
+        Elf64_Shdr *section_header;
+        section_header = (Elf64_Shdr *)&binary.data[header->e_shoff + (i * sizeof(Elf64_Shdr))];
+        
+        uint64_t start = program_header->p_offset;
+        uint64_t end = program_header->p_offset + program_header->p_filesz;
+        if (f == 1) {
+            next_section_start = section_header->sh_offset;
+            uint64_t code_cave_size = code_cave_biggest_end - code_cave_biggest_start;
+            if (code_cave_size < next_section_start - last_section_end) {
+                code_cave_biggest_start = last_section_end;
+                code_cave_biggest_end = next_section_start;
+            }
+
+            last_section_end = section_header->sh_offset + section_header->sh_size;
+            f = 0;
+        }else if (section_header->sh_offset >= start && (section_header->sh_offset + section_header->sh_size) <= end) {
+            f = 1;
+            next_section_start = section_header->sh_offset;
+            uint64_t code_cave_size = code_cave_biggest_end - code_cave_biggest_start;
+            if (code_cave_size < next_section_start - last_section_end) {
+                code_cave_biggest_start = last_section_end;
+                code_cave_biggest_end = next_section_start;
+            }
+
+            last_section_end = section_header->sh_offset + section_header->sh_size;
+        }
+
+    }
+
+
+    printf("Start %lx\n", code_cave_biggest_start);
+    printf("End %lx\n", code_cave_biggest_end);
+
+    // Find the code cave between .text and the next section
+
+    program_header->p_filesz = 0x1000;
+
+
+    uint64_t shellcode_offset = code_cave_biggest_start + code_cave_biggest_start % 8;
+    printf("shellcode offset: %lx\n", shellcode_offset);
+
+    memcpy(binary.data + shellcode_offset, decryption_stub, sizeof(decryption_stub));
+
+    uint64_t shellcode_addr = section_header_text->sh_addr + (shellcode_offset - section_header_text->sh_offset);
+
+    printf("text start  0x%lx\n", section_header_text->sh_addr);
+    printf("stub addr   0x%lx\n", section_header_text->sh_addr + section_header_text->sh_size);
+    
+    // section_header_text->sh_size += sizeof(decryption_stub);
+    header->e_entry = shellcode_addr;
+    printf("shellcode vaddr %lx\n", shellcode_addr);
 
     int fd = open("woody", O_WRONLY | O_CREAT | O_TRUNC, 0755);
     if (fd == -1) {
