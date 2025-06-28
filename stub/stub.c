@@ -1,5 +1,6 @@
 #include <elf.h>
 #include <stdint.h>
+#include <sys/mman.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
@@ -25,4 +26,3 @@ _start() {
 //         text[idx] ^= key[idx % 1];
 //     }
 // }
-
