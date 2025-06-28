@@ -2,6 +2,7 @@
 #include <assert.h>
 #include <elf.h>
 #include <fcntl.h>
+#include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
@@ -285,27 +286,34 @@ print_payload(uint8_t *payload, size_t payload_size) {
     printf("\n");
 }
 
-void
+bool
 overwrite_entrypoint(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoint, uint64_t marker) {
+    bool failed = true;
+
     for (int i = 0; i < payload_size - 8; ++i) {
         uint64_t *ptr = (uint64_t *)&payload[i];
+
         if (*ptr == marker) {
             *ptr = entrypoint;
-            printf("Replaced stub marker with actual entrypoint\n");
+            failed = false;
+            printf("Replaced stub marker with actual entrypoint (0x%lx)\n", entrypoint);
             break;
         }
     }
+
+    return failed;
 }
 
 int
 shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t code_cave, uint8_t shellcode[], const uint64_t shellcode_size, int fd,
                  size_t text_size) {
 
-    overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), header.e_entry, 0x4242424242424242);
+    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), header.e_entry, 0x4242424242424242) != 0) {
+        fprintf(stderr, "Could not find stub marker, the byte code seems to be corrupted\n");
+        return 1;
+    }
 
-    printf("Injecting payload:\n");
     print_payload(decryption_stub, sizeof(decryption_stub));
-    printf("Old entrypoint: %lx\n", header.e_entry);
 
     // copy shellcode
     int off = lseek(fd, code_cave.start, SEEK_SET);
