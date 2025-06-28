@@ -308,8 +308,26 @@ int
 shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t code_cave, uint8_t shellcode[], const uint64_t shellcode_size, int fd,
                  size_t text_size) {
 
-    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), header.e_entry, 0x4242424242424242) != 0) {
-        fprintf(stderr, "Could not find stub marker, the byte code seems to be corrupted\n");
+    const uint64_t page_size = 0x1000;
+    // round down to nearest page boundary for mprotect call (~(page_size - 1) = ~0xfff = 0xFFFFFFFFFFFFF000)
+    const uint64_t text_start_aligned = program_header.p_vaddr & ~(page_size - 1);
+    const uint64_t text_end = program_header.p_vaddr + text_size;
+    // round up to next page boundary (same logic as for text_start_aligned)
+    const uint64_t text_end_aligned = (text_end + page_size - 1) & ~(page_size - 1);
+    const uint64_t aligned_size = text_end_aligned - text_start_aligned;
+
+    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), header.e_entry, 0x4242424242424242, 1) != 0) {
+        fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
+        return 1;
+    }
+
+    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), aligned_size, 0x2424242424242424, 2) != 0) {
+        fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corruted\n");
+        return 1;
+    }
+
+    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), text_start_aligned, 0x6969696969696969, 2) != 0) {
+        fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corruted\n");
         return 1;
     }
 
