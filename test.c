@@ -1,12 +1,7 @@
-unsigned char code[] = {
-    0x48, 0xc7, 0xc0, 0x3c, 0x00, 0x00, 0x00, // mov rax, 60 (exit syscall)
-    0x48, 0xc7, 0xc7, 0x04, 0x00, 0x00, 0x00, // mov rdi, 4 (exit code 4)
-    0x0f, 0x05                                // syscall
-};
+#include <stdio.h>
 
-#include <unistd.h>
-
-int main()
-{
+int
+main() {
+    printf("hello\n");
     return 55;
 }
