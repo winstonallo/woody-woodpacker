@@ -1,17 +1,19 @@
 #include <elf.h>
 #include <stdint.h>
+#include <sys/mman.h>
 #include <sys/syscall.h>
 #include <unistd.h>
 
 typedef struct {
-    Elf64_Addr og_entry;
-    size_t text_size;
+    struct {
+        Elf64_Addr entrypoint;
+        size_t size;
+    } text;
     uint8_t key[16];
 } __attribute__((packed)) WoodyData;
 
 __attribute__((section(".text"))) WoodyData data = {
-    .og_entry = 0xdeadbeefcafebabe,
-    .text_size = 0x4242424242424242,
+    .text = {.entrypoint = 0xdeadbeefcafebabe, .size = 0x4242424242424242},
     .key = {0x42},
 };
 
@@ -27,8 +29,11 @@ _start() {
     const char msg[] = "....WOODY....\n";
     syscall(SYS_write, 1, msg, sizeof(msg) - 1);
 
-    XOR_decrypt((uint8_t *)data.og_entry, data.text_size, data.key);
+    mprotect((void *)data.text.entrypoint, data.text.size, PROT_WRITE | PROT_READ);
 
-    void (*entrypoint)() = (void (*)())data.og_entry;
-    entrypoint();
+    XOR_decrypt((uint8_t *)data.text.entrypoint, data.text.size, data.key);
+
+    mprotect((void *)data.text.entrypoint, data.text.size, PROT_EXEC | PROT_READ);
+
+    ((void (*)())data.text.entrypoint)();
 }
