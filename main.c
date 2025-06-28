@@ -267,11 +267,6 @@ fd_set_to_ph_offset(int fd, const Elf64_Ehdr header, Elf64_Phdr program_header) 
     }
     return 1;
 }
-
-int shellcode_inject(const Elf64_Ehdr header, const Elf64_Phdr program_header, char shellcode[], int fd) {
-
-}
-
 void
 make_jump_code(uint8_t *buffer, void *target) {
     buffer[0] = 0x48; // REX.W prefix for 64-bit operand
@@ -281,6 +276,45 @@ make_jump_code(uint8_t *buffer, void *target) {
     buffer[10] = 0xFF; // JMP RAX
     buffer[11] = 0xE0;
 }
+int
+shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t code_cave, uint8_t shellcode[], const uint64_t shellcode_size, int fd) {
+    make_jump_code(shellcode, (void *)header.e_entry);
+
+    // copy shellcode
+    int off = lseek(fd, code_cave.start, SEEK_SET);
+    if (off == -1) {
+        perror("lseek");
+        return 1;
+    }
+
+    int bytes_written = write(fd, shellcode, shellcode_size);
+    if (bytes_written != shellcode_size) {
+        perror("write");
+        return 1;
+    }
+
+    header.e_entry = program_header.p_vaddr + (code_cave.start - program_header.p_offset);
+
+    off = lseek(fd, 0, SEEK_SET);
+    if (off == -1) {
+        perror("lseek");
+        return 1;
+    }
+
+    bytes_written = write(fd, &header, sizeof(Elf64_Ehdr));
+    if (bytes_written != sizeof(Elf64_Ehdr)) {
+        perror("write");
+        return 1;
+    }
+
+    if (fd_set_to_ph_offset(fd, header, program_header)) return 1;
+
+    program_header.p_filesz += shellcode_size;
+    program_header.p_memsz += shellcode_size;
+    write(fd, &program_header, sizeof(Elf64_Phdr));
+    return 0;
+}
+
 int
 main(int ac, char **av) {
     if (ac != 2) {
@@ -343,197 +377,8 @@ main(int ac, char **av) {
     printf("codecave start 0x%lx\n", code_cave.start);
     printf("codecave size 0x%lx\n", code_cave.size);
 
-    // unsigned char shellcode[] = {
-    //     0xB8, 0x01, 0x00, 0x00, 0x00, // mov eax, 1
-    //     0xBB, 0x2A, 0x00, 0x00, 0x00, // mov ebx, 42
-    //     0xCD, 0x80                    // int 0x80
-    // };
-
     uint8_t shellcode[12];
-    make_jump_code(shellcode, (void *)header.e_entry);
 
-    // copy shellcode
-    off = lseek(file, code_cave.start, SEEK_SET);
-    if (off == -1) {
-        perror("lseek");
-        return 1;
-    }
-
-    int bytes_written = write(file, shellcode, sizeof(shellcode));
-    if (bytes_written != sizeof(shellcode)) {
-        perror("write");
-        return 1;
-    }
-
-    header.e_entry = program_header_entry.p_vaddr + (code_cave.start - program_header_entry.p_offset);
-
-    off = lseek(file, 0, SEEK_SET);
-    if (off == -1) {
-        perror("lseek");
-        return 1;
-    }
-
-    bytes_written = write(file, &header, sizeof(Elf64_Ehdr));
-    if (bytes_written != sizeof(Elf64_Ehdr)) {
-        perror("write");
-        return 1;
-    }
-
-    if (fd_set_to_ph_offset(file, header, program_header_entry)) return 1;
-
-    program_header_entry.p_filesz += sizeof(shellcode);
-    program_header_entry.p_memsz += sizeof(shellcode);
-    write(file, &program_header_entry, sizeof(Elf64_Phdr));
-
+    if (shellcode_inject(header, program_header_entry, code_cave, shellcode, sizeof(shellcode), file)) return 1;
     close(file);
-    // // Find .text section header
-    // Elf64_Shdr *section_header_text;
-
-    // for (int i = 0; i < header->e_shnum; i++) {
-    //     section_header_text = (Elf64_Shdr *)&binary.data[header->e_shoff + (i * sizeof(Elf64_Shdr))];
-
-    //     if (section_header_text->sh_addr == header->e_entry) break;
-    // }
-
-    // Elf64_Phdr *program_header;
-    // for (int i = 0; i < header->e_phnum; i++) {
-    //     program_header = (Elf64_Phdr *)&binary.data[header->e_phoff + (i * sizeof(Elf64_Phdr))];
-
-    //     uint64_t start = program_header->p_vaddr;
-    //     uint64_t end = program_header->p_vaddr + program_header->p_filesz;
-
-    //     if (start <= header->e_entry && end > header->e_entry) break;
-    //     program_header = 0;
-    // }
-
-    // if (program_header == 0) {
-    //     printf("can't find dont'want to write error message");
-    //     return 1;
-    // }
-
-    // int f = 0;
-
-    // uint64_t next_section_start = 0;
-    // uint64_t last_section_end = program_header->p_offset;
-
-    // uint64_t code_cave_biggest_start = 0;
-    // uint64_t code_cave_biggest_end = 0;
-    // for (int i = 0; i < header->e_shnum; i++) {
-    //     Elf64_Shdr *section_header;
-    //     section_header = (Elf64_Shdr *)&binary.data[header->e_shoff + (i * sizeof(Elf64_Shdr))];
-
-    //     uint64_t start = program_header->p_offset;
-    //     uint64_t end = program_header->p_offset + program_header->p_filesz;
-    //     if (f == 1) {
-    //         next_section_start = section_header->sh_offset;
-    //         uint64_t code_cave_size = code_cave_biggest_end - code_cave_biggest_start;
-    //         if (code_cave_size < next_section_start - last_section_end) {
-    //             code_cave_biggest_start = last_section_end;
-    //             code_cave_biggest_end = next_section_start;
-    //         }
-
-    //         last_section_end = section_header->sh_offset + section_header->sh_size;
-    //         f = 0;
-    //     } else if (section_header->sh_offset >= start && (section_header->sh_offset + section_header->sh_size) <= end) {
-    //         f = 1;
-    //         next_section_start = section_header->sh_offset;
-    //         uint64_t code_cave_size = code_cave_biggest_end - code_cave_biggest_start;
-    //         if (code_cave_size < next_section_start - last_section_end) {
-    //             code_cave_biggest_start = last_section_end;
-    //             code_cave_biggest_end = next_section_start;
-    //         }
-
-    //         last_section_end = section_header->sh_offset + section_header->sh_size;
-    //     }
-    // }
-
-    // printf("Start %lx\n", code_cave_biggest_start);
-    // printf("End %lx\n", code_cave_biggest_end);
-
-    // // Find the code cave between .text and the next section
-
-    // program_header->p_filesz = 0x1000;
-
-    // uint64_t shellcode_offset = code_cave_biggest_start + code_cave_biggest_start % 8;
-    // printf("shellcode offset: %lx\n", shellcode_offset);
-
-    // memcpy(binary.data + shellcode_offset, decryption_stub, sizeof(decryption_stub));
-
-    // uint64_t shellcode_addr = section_header_text->sh_addr + (shellcode_offset - section_header_text->sh_offset);
-
-    // printf("text start  0x%lx\n", section_header_text->sh_addr);
-    // printf("stub addr   0x%lx\n", section_header_text->sh_addr + section_header_text->sh_size);
-
-    // // section_header_text->sh_size += sizeof(decryption_stub);
-    // header->e_entry = shellcode_addr;
-    // printf("shellcode vaddr %lx\n", shellcode_addr);
-
-    // int fd = open("woody", O_WRONLY | O_CREAT | O_TRUNC, 0755);
-    // if (fd == -1) {
-    //     perror("could not create new 'woody' binary:");
-    //     return -1;
-    // }
-
-    // write(fd, binary.data, binary.len);
-
-    // // for (int i = 0; i < section_header.sh_size; i++)
-    // // {
-    // //     char c;
-    // //     read(file, &c, 1);
-    // //     if (c == '7')
-    // //     {
-    // //         printf("(%i|%c)\n", i, c);
-    // //         lseek(file, -1, SEEK_CUR);
-    // //         write(file, "*", 1);
-    // //     }
-    // // }
-    // // printf("\n");
-
-    // // offset = lseek(file, section_header.sh_offset, SEEK_SET);
-    // // for (int i = 0; i < section_header.sh_size; i++)
-    // // {
-    // //     char c;
-    // //     c = '*';
-    // //     write(file, &c, 1);
-    // //     // read(file, &c, 1);
-    // //     // if (c == '7')
-    // //     // {
-    // //     //     lseek(file, -1, SEEK_CUR);
-    // //     //     write(file, "8", 1);
-    // //     //     printf("Changed\n");
-    // //     // }
-    // // }
-    // // printf("----------------\n");
-
-    // // offset = lseek(file, section_header.sh_offset, SEEK_SET);
-    // // for (int i = 0; i < section_header.sh_size; i++)
-    // // {
-    // //     char c;
-    // //     read(file, &c, 1);
-    // //     printf("%c", c);
-    // // }
-    // // printf("\n");
-    // // fflush(file);
-    // free(binary.data);
-    // return 0;
-    // // Read an elf binary
-    // // Check if its a 64 bit elf with the starting values
-
-    // Where does the execution start
-
-    // Read the whole code segment
-    // Apply encryption
-    // save it to file
-    //
-
-    // Add a code segment to elf which decrypts the code segment
-    // printf("%p\n", &main);
-    // __uint64_t add = &alloc;
-    // printf("%p\n", add);
-    // add = add - (add % 4096);
-    // printf("%p\n", add);
-    // int a = mprotect(add, 4096, PROT_READ | PROT_WRITE | PROT_EXEC);
-    // if (a)
-    //     return a;
-    // int *p = alloc(1);
 }
