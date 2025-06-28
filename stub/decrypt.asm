@@ -21,6 +21,11 @@ section .text
     SYS_MPROTECT:   equ 10
     SYS_EXIT:       equ 60
 
+    ; mprotect flags
+    PROT_READ:      equ 0x1
+    PROT_WRITE:     equ 0x2
+    PROT_EXEC:      equ 0x4
+
 _start:
     mov rax, SYS_WRITE
     mov rdi, 1
