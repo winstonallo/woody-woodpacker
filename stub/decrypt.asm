@@ -33,6 +33,5 @@ _start:
     mov rdx, WOODY_LEN
     syscall
 
-    mov rax, SYS_EXIT
-    mov rdi, 0
-    syscall
+    mov rax, [WOODY_DATA + WoodyData.text_entrypoint]
+    jmp rax
