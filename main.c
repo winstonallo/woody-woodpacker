@@ -32,6 +32,13 @@ elf64_ident_check(const Elf64_Ehdr *header) {
 }
 
 int
+put_str(int fd, char *str) {
+    int bytes_written = write(fd, str, strlen(str));
+    if (bytes_written != strlen(str)) return 1;
+    return 0;
+}
+
+int
 fd_copy_whole(int fd_dest, int fd_src) {
 
     int bytes_read;
@@ -61,68 +68,60 @@ fd_copy_whole(int fd_dest, int fd_src) {
 }
 
 int
-section_header_entry_get(Elf64_Ehdr *header, Elf64_Shdr *section_header_entry, int fd) {
-    assert(header != NULL);
+section_header_entry_get(const Elf64_Ehdr header, Elf64_Shdr *section_header_entry, int fd) {
     assert(section_header_entry != NULL);
 
-    int bytes_read;
-    Elf64_Shdr section_header;
-
-    int off = lseek(fd, header->e_shoff, SEEK_SET);
-    if (off != header->e_shoff) {
+    int off = lseek(fd, header.e_shoff, SEEK_SET);
+    if (off != header.e_shoff) {
         perror("lseek - section_header_entry_get fd");
         return 1;
     }
 
-    for (int i = 0; i < header->e_shnum; i++) {
-        bytes_read = read(fd, &section_header, sizeof(Elf64_Shdr));
+    Elf64_Shdr sh;
+    for (int i = 0; i < header.e_shnum; i++) {
+        int bytes_read = read(fd, &sh, sizeof(Elf64_Shdr));
         if (bytes_read != sizeof(Elf64_Shdr)) {
             perror("read");
             return 1;
         }
 
-        if (section_header.sh_addr == header->e_entry) {
-            *section_header_entry = section_header;
+        if (sh.sh_addr == header.e_entry) {
+            *section_header_entry = sh;
             return 0;
         }
     }
 
-    char *error = "could not find section header that is pointed to by e_entry";
-    write(STDOUT_FILENO, error, strlen(error));
+    put_str(STDERR_FILENO, "could not find section header that is pointed to by e_entry");
     return 2;
 }
 
 int
-program_header_by_section_header_get(Elf64_Ehdr *header, Elf64_Shdr *section_header, Elf64_Phdr *program_header_res, int fd) {
-    assert(header != NULL);
-    assert(section_header != NULL);
+program_header_by_section_header_get(const Elf64_Ehdr header, const Elf64_Shdr section_header, Elf64_Phdr *program_header_res, int fd) {
     assert(program_header_res != NULL);
 
-    int off = lseek(fd, header->e_phoff, SEEK_SET);
-    if (off != header->e_phoff) {
+    int off = lseek(fd, header.e_phoff, SEEK_SET);
+    if (off != header.e_phoff) {
         perror("lseek - fd");
         return 1;
     }
 
-    const uint64_t sh_start = section_header->sh_offset;
-    const uint64_t sh_end = section_header->sh_offset + section_header->sh_size;
+    const uint64_t sh_start = section_header.sh_offset;
+    const uint64_t sh_end = section_header.sh_offset + section_header.sh_size;
 
-    int bytes_read;
-    Elf64_Phdr program_header;
-
-    for (int i = 0; i < header->e_phnum; i++) {
-        bytes_read = read(fd, &program_header, sizeof(Elf64_Phdr));
+    Elf64_Phdr ph;
+    for (int i = 0; i < header.e_phnum; i++) {
+        int bytes_read = read(fd, &ph, sizeof(Elf64_Phdr));
         if (bytes_read != sizeof(Elf64_Phdr)) {
             perror("read");
             return 1;
         }
 
-        const uint64_t ph_start = program_header.p_offset;
-        const uint64_t ph_end = program_header.p_offset + program_header.p_filesz;
+        const uint64_t ph_start = ph.p_offset;
+        const uint64_t ph_end = ph.p_offset + ph.p_filesz;
 
         const uint16_t section_is_inside_program_header = sh_start >= ph_start && sh_end <= ph_end;
         if (section_is_inside_program_header) {
-            *program_header_res = program_header;
+            *program_header_res = ph;
             return 0;
         }
     }
@@ -269,6 +268,10 @@ fd_set_to_ph_offset(int fd, const Elf64_Ehdr header, Elf64_Phdr program_header) 
     return 1;
 }
 
+int shellcode_inject(const Elf64_Ehdr header, const Elf64_Phdr program_header, char shellcode[], int fd) {
+
+}
+
 void
 make_jump_code(uint8_t *buffer, void *target) {
     buffer[0] = 0x48; // REX.W prefix for 64-bit operand
@@ -320,12 +323,12 @@ main(int ac, char **av) {
 
     Elf64_Shdr section_header_entry;
 
-    if (section_header_entry_get(&header, &section_header_entry, file)) return 1;
+    if (section_header_entry_get(header, &section_header_entry, file)) return 1;
 
     printf("sh offset 0x%lx\n", section_header_entry.sh_offset);
 
     Elf64_Phdr program_header_entry;
-    if (program_header_by_section_header_get(&header, &section_header_entry, &program_header_entry, file)) return 1;
+    if (program_header_by_section_header_get(header, section_header_entry, &program_header_entry, file)) return 1;
 
     printf("ph offset 0x%lx\n", program_header_entry.p_offset);
 
