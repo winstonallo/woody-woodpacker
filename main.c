@@ -287,21 +287,24 @@ print_payload(uint8_t *payload, size_t payload_size) {
 }
 
 bool
-overwrite_entrypoint(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoint, uint64_t marker) {
-    bool failed = true;
+overwrite_entrypoint(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoint, uint64_t marker, size_t occurrences) {
+    int found = 0;
 
     for (int i = 0; i < payload_size - 8; ++i) {
         uint64_t *ptr = (uint64_t *)&payload[i];
 
         if (*ptr == marker) {
             *ptr = entrypoint;
-            failed = false;
-            printf("Replaced stub marker with actual entrypoint (0x%lx)\n", entrypoint);
+            found++;
+        }
+
+        // replaced all occurrences of the marker
+        if (found == occurrences) {
             break;
         }
     }
 
-    return failed;
+    return found != occurrences;
 }
 
 int
