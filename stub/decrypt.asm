@@ -4,16 +4,6 @@ struc WoodyData
     .key:               resb 16 ; 16x1 bytes
 endstruc
 
-ERROR_MSG:      db 'Error', 10
-ERROR_MSG_LEN:  equ $-ERROR_MSG
-
-WOODY:          db '....WOODY....', 10
-WOODY_LEN:      equ $-WOODY
-
-WOODY_DATA:
-    dq 0xdeadbeefcafebabe   ; .text_entrypoint
-    dq 0xcafebabedeadbeef   ; .text_size
-    times 16 db 0x42        ; .key
 
 ; syscalls
 SYS_WRITE:      equ 1
@@ -24,6 +14,15 @@ SYS_EXIT:       equ 60
 PROT_READ:      equ 0x1
 PROT_WRITE:     equ 0x2
 PROT_EXEC:      equ 0x4
+
+_start:
+    push rax
+    push r8
+    push rdi
+    push rsi
+    push rdx
+    push rcx
+    call call_original_code
 
 print_woody:
     mov rax, SYS_WRITE
@@ -84,7 +83,13 @@ decrypt_done:
     ret
 
 call_original_code:
-    mov rax, [WOODY_DATA + WoodyData.text_entrypoint]
+    pop rcx
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rax
+    pop r8
+    mov rax, qword 0x401020
     jmp rax
 
 error:
@@ -99,6 +104,14 @@ error:
     syscall
 
 
-call print_woody
-call decrypt
-call call_original_code
+
+ERROR_MSG:      db 'Error', 10
+ERROR_MSG_LEN:  equ $-ERROR_MSG
+
+WOODY:          db '....WOODY....', 10
+WOODY_LEN:      equ $-WOODY
+
+WOODY_DATA:
+    dq 0xdeadbeefcafebabe   ; .text_entrypoint
+    dq 0xcafebabedeadbeef   ; .text_size
+    times 16 db 0x42        ; .key

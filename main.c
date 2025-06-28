@@ -278,43 +278,18 @@ make_jump_code(uint8_t *buffer, void *target) {
     buffer[11] = 0xE0;
 }
 
-static uint8_t payload[] = {
-    // stpre registers
-    0x50, // push rax
-    0x57, // push rdi
-    0x56, // push rsi
-    0x52, // push rdx
-
-    0x48, 0xc7, 0xc0, 0x01, 0x00, 0x00, 0x00, // mov rax, 1 (sys_write)
-    0x48, 0xc7, 0xc7, 0x01, 0x00, 0x00, 0x00, // mov rdi, 1 (stdout)
-    0x48, 0x8d, 0x35, 0x19, 0x00, 0x00, 0x00, // lea rsi, [rip + 26] (to string)
-    0x48, 0xc7, 0xc2, 0x0e, 0x00, 0x00, 0x00, // mov rdx, 14 (string length)
-    0x0f, 0x05,                               // syscall
-
-    0x5a, // pop rdx
-    0x5e, // pop rsi
-    0x5f, // pop rdi
-    0x58, // pop rax
-
-    0x48, 0xb8,                                     // mov rax, imm64
-    0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, 0x42, // placeholder
-    0xff, 0xe0,                                     // jmp rax
-
-    '.',  '.',  '.',  '.',  'W',  'O',  'O',  'D',  'Y', '.', '.', '.', '.', '\n',
-};
-
 void
 print_payload() {
     int i;
-    for (i = 0; i < sizeof(payload) / 8; ++i) {
+    for (i = 0; i < sizeof(decryption_stub) / 8; ++i) {
         for (int j = 0; j < 8; ++j) {
-            printf("0x%02x, ", payload[i * 8 + j]);
+            printf("0x%02x, ", decryption_stub[i * 8 + j]);
         }
         printf("\n");
     }
-    size_t remainder = sizeof(payload) % 8;
+    size_t remainder = sizeof(decryption_stub) % 8;
     for (int j = 0; j < remainder; ++j) {
-        printf("0x%02x, ", payload[i * 8 + j]);
+        printf("0x%02x, ", decryption_stub[i * 8 + j]);
     }
     printf("\n");
 }
@@ -322,7 +297,15 @@ print_payload() {
 int
 shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t code_cave, uint8_t shellcode[], const uint64_t shellcode_size, int fd,
                  size_t text_size) {
-    memcpy(payload + (sizeof(payload) - 24), &header.e_entry, 8);
+
+    for (int i = 0; i < sizeof(decryption_stub) - 8; ++i) {
+        uint64_t *ptr = (uint64_t *)&decryption_stub[i];
+        if (*ptr == 0x4242424242424242) {
+            *ptr = header.e_entry;
+            printf("Replaced stub marker with actual entrypoint\n");
+            break;
+        }
+    }
 
     printf("Injecting payload:\n");
     print_payload();
@@ -335,8 +318,8 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
         return 1;
     }
 
-    int bytes_written = write(fd, payload, sizeof(payload));
-    if (bytes_written != sizeof(payload)) {
+    int bytes_written = write(fd, decryption_stub, sizeof(decryption_stub));
+    if (bytes_written != sizeof(decryption_stub)) {
         perror("write");
         return 1;
     }
@@ -357,8 +340,8 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
 
     if (fd_set_to_ph_offset(fd, header, program_header)) return 1;
 
-    program_header.p_filesz += sizeof(payload);
-    program_header.p_memsz += sizeof(payload);
+    program_header.p_filesz += sizeof(decryption_stub);
+    program_header.p_memsz += sizeof(decryption_stub);
     write(fd, &program_header, sizeof(Elf64_Phdr));
     return 0;
 }
