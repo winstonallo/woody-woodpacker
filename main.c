@@ -349,13 +349,21 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
         return 1;
     }
 
-    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), size, 0x2424242424242424, 2) != 0) {
-        fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corruted\n");
+    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), size, 0x2424242424242424, 1) != 0) {
+        fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corrupted\n");
         return 1;
     }
 
-    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), text_start_aligned, 0x6969696969696969, 2) != 0) {
-        fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corruted\n");
+    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), text_start_aligned, 0x6969696969696969, 1) != 0) {
+        fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corrupted\n");
+        return 1;
+    }
+
+    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), encryption_start, 0x6666666666666666, 1) != 0) {
+        return 1;
+    }
+
+    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), encryption_size, 0x3333333333333333, 1) != 0) {
         return 1;
     }
 
