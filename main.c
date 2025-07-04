@@ -317,12 +317,9 @@ inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint
     for (size_t i = 0; i < shellcode_size; ++i) {
         int j = 0;
         while (marker[j] == shellcode[i + j]) {
-            j++;
             if (j == 15) {
                 ft_memcpy((uint8_t *)&shellcode[i], key, 16);
-                printf("KEY:\n");
                 print_payload((uint8_t *)key, 16);
-                printf("PAYLOAD:\n");
                 print_payload((uint8_t *)shellcode, shellcode_size);
                 printf("Injected decryption key into binary at position %lu\n", i);
                 return 0;
