@@ -76,11 +76,7 @@ xor_loop:
 
     mov r9b, [rsi + rdx]
 
-    mov r10, XOR_KEY
-    mov cl, r8b
-    shr r10, cl
-    and r10, 0x01
-
+    xor r9b, 0x01
     xor r9b, 0x01
 
     mov [rsi + rdx], r9b
