@@ -404,9 +404,27 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
 
 int
 main(int ac, char **av) {
-    if (ac != 2) {
-        printf("wrong usage: ./woody BINARY_NAME\n");
+    if (ac != 2 && ac != 3) {
+        printf("wrong usage: ./woody BINARY_NAME [ENCRYPTION_KEY(16 bytes)]\n");
         return 1;
+    }
+
+    const uint8_t key[16] = {0};
+    if (ac == 2) {
+        int fd = open("/dev/urandom", O_RDONLY);
+        if (fd == -1) {
+            fprintf(stderr, "Could not generate random XOR key: %s", strerror(errno));
+            return 1;
+        }
+        if (read(fd, (uint8_t *)key, 16) == -1) {
+            fprintf(stderr, "Could not generate random XOR key: %s", strerror(errno));
+            return 1;
+        }
+    } else {
+        if (strlen(av[3]) != 32) {
+            fprintf(stderr, "Invalid key length - must be 16 hex bytes (32 characters)");
+            return 1;
+        }
     }
 
     int file = open(av[1], O_RDONLY);
