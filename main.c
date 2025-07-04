@@ -1,4 +1,5 @@
 #include "stub_bytes.h"
+#include "utils.h"
 #include <assert.h>
 #include <elf.h>
 #include <fcntl.h>

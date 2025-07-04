@@ -5,7 +5,7 @@ all:
 	@echo "unsigned char decryption_stub[] = {" >> stub_bytes.h
 	@xxd -i < stub.bin | sed 's/^/	/' >> stub_bytes.h
 	@echo "};" >> stub_bytes.h
-	@cc main.c -g -o woody_woodpacker
+	@cc main.c utils/memcpy.c -g -o woody_woodpacker -Iinc
 
 fclean:
 	rm woody woody_woodpacker crypto.bin crypto.o stub_bytes.h
