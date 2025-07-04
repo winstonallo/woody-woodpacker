@@ -314,17 +314,23 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
     const uint64_t page_size = 0x1000;
     // round down to nearest page boundary for mprotect call (~(page_size - 1) = ~0xfff = 0xFFFFFFFFFFFFF000)
     const uint64_t text_start_aligned = program_header.p_vaddr & ~(page_size - 1);
-    const uint64_t text_end = program_header.p_vaddr + text_size;
+    const uint64_t text_end = program_header.p_vaddr + program_header.p_filesz;
     // round up to next page boundary (same logic as for text_start_aligned)
     const uint64_t text_end_aligned = (text_end + page_size - 1) & ~(page_size - 1);
-    const uint64_t aligned_size = text_end_aligned - text_start_aligned;
+    const uint64_t size = text_end - text_start_aligned;
+
+    printf("entrypoint: %lx\n", header.e_entry);
+    printf("text_end: %lx\n", text_end);
+    printf("text_start_aligned: %lx\n", text_start_aligned);
+    printf("text_end_aligned: %lx\n", text_end_aligned);
+    printf("size: %lu\n", size);
 
     if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), header.e_entry, 0x4242424242424242, 1) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
         return 1;
     }
 
-    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), aligned_size, 0x2424242424242424, 2) != 0) {
+    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), size, 0x2424242424242424, 2) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corruted\n");
         return 1;
     }
@@ -333,8 +339,6 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
         fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corruted\n");
         return 1;
     }
-
-    print_payload(decryption_stub, sizeof(decryption_stub));
 
     // copy shellcode
     int off = lseek(fd, code_cave.start, SEEK_SET);
@@ -415,23 +419,14 @@ main(int ac, char **av) {
 
     if (section_header_entry_get(header, &section_header_entry, file)) return 1;
 
-    printf("sh offset 0x%lx\n", section_header_entry.sh_offset);
-
     Elf64_Phdr program_header_entry;
     if (program_header_by_section_header_get(header, section_header_entry, &program_header_entry, file)) return 1;
-
-    printf("ph offset 0x%lx\n", program_header_entry.p_offset);
 
     Elf64_Phdr program_header_entry_next;
     if (program_header_get_next(header, program_header_entry, &program_header_entry_next, file)) return 1;
 
-    printf("ph_next offset 0x%lx\n", program_header_entry_next.p_offset);
-
     code_cave_t code_cave;
     if (code_cave_get(header, program_header_entry.p_offset, program_header_entry_next.p_offset, &code_cave, file)) return 1;
-
-    printf("codecave start 0x%lx\n", code_cave.start);
-    printf("codecave size 0x%lx\n", code_cave.size);
 
     if (shellcode_inject(header, program_header_entry, code_cave, decryption_stub, sizeof(decryption_stub), file, section_header_entry.sh_size)) return 1;
     close(file);
