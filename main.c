@@ -2,7 +2,9 @@
 #include "utils.h"
 #include <assert.h>
 #include <elf.h>
+#include <errno.h>
 #include <fcntl.h>
+#include <linux/limits.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
