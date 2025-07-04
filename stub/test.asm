@@ -1,7 +1,8 @@
 ENTRYPOINT_MARKER: equ 0x4242424242424242
 MPROTECT_SIZE_MARKER: equ 0x2424242424242424
 MPROTECT_ADDR_MARKER: equ 0x6969696969696969
-XOR_KEY: equ 0x1111111111111111
+DECRYPT_START_OFFSET_MARKER: equ 0x6666666666666666
+DECRYPT_LEN_MARKER: equ 0x3333333333333333
 
 SYS_WRITE: equ 1
 SYS_MPROTECT: equ 10
@@ -25,8 +26,11 @@ _start:
 woody_string:
     db '....WOODY....', 10
 
+xor_key:
+    db 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
+
 get_string_addr:
-    pop rsi                     ; rsi -> woody_string
+    pop rsi
     mov rdx, 14
     syscall
 
@@ -65,8 +69,8 @@ start_decryption:
     push r9
     push r10
 
-    mov rsi, MPROTECT_ADDR_MARKER
-    mov rcx, MPROTECT_SIZE_MARKER
+    mov rsi, DECRYPT_START_OFFSET_MARKER
+    mov rcx, DECRYPT_LEN_MARKER
     mov rdx, 0 ; counter
     mov r8, 0
 
@@ -76,14 +80,21 @@ xor_loop:
 
     mov r9b, [rsi + rdx]
 
-    xor r9b, 0x01
-    xor r9b, 0x01
+    push rsi
+    call get_xor_key
+
+get_xor_key:
+    pop rsi
+    mov r10b, [rsi + r8]
+    pop rsi
+
+    xor r9b, r10b
 
     mov [rsi + rdx], r9b
 
     inc rdx
     inc r8
-    and r8, 0x3f
+    and r8, 0xf
     jmp xor_loop
 
 call_original_code:
