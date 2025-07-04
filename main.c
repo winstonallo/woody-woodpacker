@@ -325,8 +325,9 @@ inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint
                 printf("PAYLOAD:\n");
                 print_payload((uint8_t *)shellcode, shellcode_size);
                 printf("Injected decryption key into binary at position %lu\n", i);
-                break;
+                return 0;
             }
+            j++;
         }
         j = 0;
     }

@@ -1,5 +1,5 @@
 all:
-	@nasm -f elf64 stub/test.asm -o stub.o
+	@nasm -f elf64 stub/decrypt.asm -o stub.o
 	@objcopy -O binary stub.o stub.bin
 	@echo "// Auto-generated stub code" > stub_bytes.h
 	@echo "unsigned char decryption_stub[] = {" >> stub_bytes.h
