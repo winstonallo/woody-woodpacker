@@ -87,7 +87,7 @@ section_header_entry_get(const Elf64_Ehdr header, Elf64_Shdr *section_header_ent
             return 1;
         }
 
-        if (sh.sh_addr <= header.e_entry && (sh.sh_addr + sh.sh_size) >= header.e_entry) {
+        if (sh.sh_addr <= header.e_entry && (sh.sh_addr + sh.sh_size) > header.e_entry) {
             *section_header_entry = sh;
             return 0;
         }
