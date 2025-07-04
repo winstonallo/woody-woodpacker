@@ -332,7 +332,10 @@ inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint
 
 int
 shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t code_cave, uint8_t shellcode[], const uint64_t shellcode_size, int fd,
-                 size_t text_size) {
+                 const uint8_t key[16], const uint64_t encryption_start, const uint64_t encryption_size) {
+
+    printf("encryption_start: %lx\n", encryption_start);
+    printf("encryption_size: %lx\n", encryption_size);
 
     const uint64_t page_size = 0x1000;
     // round down to nearest page boundary for mprotect call (~(page_size - 1) = ~0xfff = 0xFFFFFFFFFFFFF000)
@@ -366,6 +369,9 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
     if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), encryption_size, 0x3333333333333333, 1) != 0) {
         return 1;
     }
+
+    printf("text_start_aligned: %lx\n", text_start_aligned);
+    printf("size: %lx\n", size);
 
     // copy shellcode
     int off = lseek(fd, code_cave.start, SEEK_SET);
@@ -473,6 +479,43 @@ main(int ac, char **av) {
     code_cave_t code_cave;
     if (code_cave_get(header, program_header_entry.p_offset, program_header_entry_next.p_offset, &code_cave, file)) return 1;
 
-    if (shellcode_inject(header, program_header_entry, code_cave, decryption_stub, sizeof(decryption_stub), file, section_header_entry.sh_size)) return 1;
+    const uint64_t encrytion_start = program_header_entry.p_vaddr + (section_header_entry.sh_offset - program_header_entry.p_offset);
+
+    if (shellcode_inject(header, program_header_entry, code_cave, decryption_stub, sizeof(decryption_stub), file, key, encrytion_start,
+                         section_header_entry.sh_size)) {
+        return 1;
+    }
+
+    off = lseek(file, section_header_entry.sh_offset, SEEK_SET);
+    if (off != section_header_entry.sh_offset) {
+        perror("lseek");
+        return 1;
+    }
+
+    printf("section_header.offset: %lx\n", section_header_entry.sh_offset);
+    printf("section_header.size: %lx\n", section_header_entry.sh_size);
+
+    uint8_t enc;
+    for (int i = 0; i < section_header_entry.sh_size; i++) {
+        int bytes_read = read(file, &enc, 1);
+        if (bytes_read != 1) {
+            perror("read");
+            return 1;
+        }
+
+        enc ^= key[i % 16];
+
+        int off = lseek(file, -1, SEEK_CUR);
+        if (off == -1) {
+            perror("lseek");
+            return 1;
+        }
+
+        int bytes_written = write(file, &enc, 1);
+        if (bytes_written != 1) {
+            perror("read");
+            return 1;
+        }
+    }
     close(file);
 }
