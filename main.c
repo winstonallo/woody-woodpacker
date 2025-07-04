@@ -308,6 +308,29 @@ overwrite_entrypoint(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoin
 }
 
 int
+inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint8_t key[16]) {
+    const uint8_t marker[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+
+    for (size_t i = 0; i < shellcode_size; ++i) {
+        int j = 0;
+        while (marker[j] == shellcode[i + j]) {
+            j++;
+            if (j == 15) {
+                ft_memcpy((uint8_t *)&shellcode[i], key, 16);
+                printf("KEY:\n");
+                print_payload((uint8_t *)key, 16);
+                printf("PAYLOAD:\n");
+                print_payload((uint8_t *)shellcode, shellcode_size);
+                printf("Injected decryption key into binary at position %lu\n", i);
+                break;
+            }
+        }
+        j = 0;
+    }
+    return 0;
+}
+
+int
 shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t code_cave, uint8_t shellcode[], const uint64_t shellcode_size, int fd,
                  size_t text_size) {
 
@@ -319,11 +342,7 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
     const uint64_t text_end_aligned = (text_end + page_size - 1) & ~(page_size - 1);
     const uint64_t size = text_end - text_start_aligned;
 
-    printf("entrypoint: %lx\n", header.e_entry);
-    printf("text_end: %lx\n", text_end);
-    printf("text_start_aligned: %lx\n", text_start_aligned);
-    printf("text_end_aligned: %lx\n", text_end_aligned);
-    printf("size: %lu\n", size);
+    inject_xor_key(shellcode, shellcode_size, key);
 
     if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), header.e_entry, 0x4242424242424242, 1) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
