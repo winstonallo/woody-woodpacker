@@ -1,20 +1,7 @@
 #include <stddef.h>
 
-// Performs block copy with `movsb` on x86-84, falls back to naive memcpy
-// on other architectures.
-//
-// `dst` and `src` MAY overlap.
 void *
 ft_memcpy(void *dest, const void *src, size_t n) {
-#ifdef __x86_64__
-    __asm__ volatile("mov %0, %%rsi;"
-                     "mov %1, %%rdi;"
-                     "cld;"
-                     "rep movsb"
-                     : "+a"(src), "+d"(dest)
-                     : "c"(n)
-                     : "memory", "flags", "rsi", "rdi");
-#else
     unsigned char *d = (unsigned char *)dest;
     const unsigned char *s = (const unsigned char *)src;
 
@@ -32,6 +19,5 @@ ft_memcpy(void *dest, const void *src, size_t n) {
         }
     }
 
-#endif
-    return (dest);
+    return dest;
 }
