@@ -1,4 +1,4 @@
-C_FILES := main.c elf_header.c elf_segments.c elf_sections.c encrypt.c inject.c utils/fd.c utils/memcpy.c utils/put_str.c
+C_FILES := main.c elf_header.c elf_segments.c elf_sections.c encrypt.c inject.c utils/fd.c utils/memcpy.c utils/put_str.c utils/parsehex.c
 SRC_DIRECTORY := src/
 
 COMPILE_C_FILES := $(addprefix $(SRC_DIRECTORY), $(C_FILES))
