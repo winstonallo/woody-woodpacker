@@ -26,29 +26,47 @@ main(int ac, char **av) {
     if (file == -1) return 1;
 
     Elf64_Ehdr header;
-    if (elf_header_parse(file, &header)) return 1;
+    if (elf_header_parse(file, &header)) {
+        close(file);
+        return 1;
+    }
 
     Elf64_Shdr section_header_entry;
 
-    if (section_header_entry_get(header, &section_header_entry, file)) return 1;
-
+    if (section_header_entry_get(header, &section_header_entry, file)) {
+        close(file);
+        return 1;
+    }
     Elf64_Phdr program_header_entry;
-    if (program_header_by_section_header_get(header, section_header_entry, &program_header_entry, file)) return 1;
+    if (program_header_by_section_header_get(header, section_header_entry, &program_header_entry, file)) {
+        close(file);
+        return 1;
+    }
 
     Elf64_Phdr program_header_entry_next;
-    if (program_header_get_next(header, program_header_entry, &program_header_entry_next, file)) return 1;
+    if (program_header_get_next(header, program_header_entry, &program_header_entry_next, file)) {
+        close(file);
+        return 1;
+    }
 
     code_cave_t code_cave;
-    if (code_cave_get(header, program_header_entry.p_offset, program_header_entry_next.p_offset, &code_cave, file)) return 1;
+    if (code_cave_get(header, program_header_entry.p_offset, program_header_entry_next.p_offset, &code_cave, file)) {
+        close(file);
+        return 1;
+    }
 
     const uint64_t encrytion_start = program_header_entry.p_vaddr + (section_header_entry.sh_offset - program_header_entry.p_offset);
 
     if (shellcode_inject(header, program_header_entry, code_cave, decryption_stub, sizeof(decryption_stub), file, key, encrytion_start,
                          section_header_entry.sh_size)) {
+        close(file);
         return 1;
     }
 
-    if (section_text_encrypt(section_header_entry, file, key)) return 1;
+    if (section_text_encrypt(section_header_entry, file, key)) {
+        close(file);
+        return 1;
+    }
 
     close(file);
 }

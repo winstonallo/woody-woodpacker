@@ -1,6 +1,6 @@
 #include <elf.h>
-#include <stdio.h>
 #include <fcntl.h>
+#include <stdio.h>
 #include <unistd.h>
 
 int
@@ -43,11 +43,16 @@ file_duplicate(char **av) {
     int fd_new = open("woody", O_RDWR | O_CREAT | O_TRUNC, 0755);
     if (fd_new == -1) {
         perror("could not create new 'woody' binary:\n");
+        close(file);
         return -1;
     }
 
-    if (fd_copy_whole(fd_new, file)) return -1;
-
+    if (fd_copy_whole(fd_new, file)) {
+        close(file);
+        close(fd_new);
+        return -1;
+    }
+    close(file);
     return fd_new;
 }
 

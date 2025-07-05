@@ -18,8 +18,10 @@ key_create(int ac, char **av, u_int8_t *key) {
         }
         if (read(fd, key, 16) == -1) {
             perror("Could not generate random XOR key");
+            close(fd);
             return 1;
         }
+        close(fd);
     } else {
         if (ft_strlen(av[3]) != 32) {
             fprintf(stderr, "Invalid key length - must be 16 hex bytes (32 characters)");
@@ -35,17 +37,14 @@ key_create(int ac, char **av, u_int8_t *key) {
 int
 section_text_encrypt(const Elf64_Shdr section_header_entry, int fd, const uint8_t key[16]) {
 
-    int off = lseek(fd, section_header_entry.sh_offset, SEEK_SET);
+    size_t off = lseek(fd, section_header_entry.sh_offset, SEEK_SET);
     if (off != section_header_entry.sh_offset) {
         perror("lseek");
         return 1;
     }
 
-    printf("section_header.offset: %lx\n", section_header_entry.sh_offset);
-    printf("section_header.size: %lx\n", section_header_entry.sh_size);
-
     uint8_t enc;
-    for (int i = 0; i < section_header_entry.sh_size; i++) {
+    for (size_t i = 0; i < section_header_entry.sh_size; i++) {
         int bytes_read = read(fd, &enc, 1);
         if (bytes_read != 1) {
             perror("read");
