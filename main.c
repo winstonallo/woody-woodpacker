@@ -275,16 +275,17 @@ fd_set_to_ph_offset(int fd, const Elf64_Ehdr header, Elf64_Phdr program_header) 
 
 void
 print_payload(uint8_t *payload, size_t payload_size) {
+    printf("\n -- Final Payload --\n");
     int i;
-    for (i = 0; i < payload_size / 8; ++i) {
-        for (int j = 0; j < 8; ++j) {
-            printf("0x%02x, ", payload[i * 8 + j]);
+    for (i = 0; i < payload_size / 16; ++i) {
+        for (int j = 0; j < 16; j += 2) {
+            printf("0x%02x%02x ", payload[i * 16 + j], payload[i * 16 + j + 1]);
         }
         printf("\n");
     }
-    size_t remainder = payload_size % 8;
-    for (int j = 0; j < remainder; ++j) {
-        printf("0x%02x, ", payload[i * 8 + j]);
+    size_t remainder = payload_size % 16;
+    for (int j = 0; j < remainder; j += 2) {
+        printf("0x%02x%02x ", payload[i * 16 + j], payload[i * 16 + j + 1]);
     }
     printf("\n");
 }
