@@ -51,15 +51,6 @@ start_decryption:
     test rax, rax
     js error
 
-    pop rdx
-    pop rsi
-    pop rdi
-    pop rax
-
-    push rax
-    push rdi
-    push rsi
-    push rdx
     push r8
     push r9
     push r10
