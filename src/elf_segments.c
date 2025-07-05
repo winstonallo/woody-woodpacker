@@ -8,7 +8,7 @@ int
 program_header_by_section_header_get(const Elf64_Ehdr header, const Elf64_Shdr section_header, Elf64_Phdr *program_header_res, int fd) {
     assert(program_header_res != NULL);
 
-    int off = lseek(fd, header.e_phoff, SEEK_SET);
+    size_t off = lseek(fd, header.e_phoff, SEEK_SET);
     if (off != header.e_phoff) {
         perror("lseek - fd");
         return 1;
@@ -44,7 +44,7 @@ int
 program_header_get_next(const Elf64_Ehdr header, const Elf64_Phdr program_header_cur, Elf64_Phdr *program_header_next, int fd) {
     assert(program_header_next != NULL);
 
-    int off = lseek(fd, header.e_phoff, SEEK_SET);
+    size_t off = lseek(fd, header.e_phoff, SEEK_SET);
     if (off != header.e_phoff) {
         perror("lseek - fd");
         return 1;
