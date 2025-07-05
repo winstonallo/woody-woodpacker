@@ -78,6 +78,12 @@ xor_loop:
     jmp xor_loop
 
 call_original_code:
+    mov rax, SYS_MPROTECT
+    mov rdi, MPROTECT_ADDR_MARKER
+    mov rsi, DECRYPT_LEN_MARKER
+    mov rdx, PROT_READ | PROT_EXEC
+    syscall
+
     pop r11
     pop r10
     pop r9
