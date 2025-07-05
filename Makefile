@@ -10,7 +10,7 @@ all:
 	@echo "unsigned char decryption_stub[] = {" >> stub_bytes.h
 	@xxd -i < stub.bin | sed 's/^/	/' >> stub_bytes.h
 	@echo "};" >> stub_bytes.h
-	@cc $(COMPILE_C_FILES) -g -o woody_woodpacker -Iinc
+	@cc $(COMPILE_C_FILES) -o woody_woodpacker -Iinc -Wall -Wextra -Werror
 
 fclean:
 	rm woody woody_woodpacker crypto.bin crypto.o stub_bytes.h
