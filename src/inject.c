@@ -3,6 +3,7 @@
 #include "unistd.h"
 #include <elf.h>
 #include <stdbool.h>
+#include <stddef.h>
 #include <stdio.h>
 
 int
@@ -142,7 +143,7 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
         fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corrupted\n");
         return 1;
     }
-    printf("Injected page-aligned .text section start address (0x%lx) into payload\n", text_start_aligned);
+    printf("Injected page-aligned segment of the .text section start address (0x%lx) into payload\n", text_start_aligned);
 
     if (overwrite_entrypoint(shellcode, shellcode_size, encryption_start, 0x6666666666666666, 1) != 0) {
         fprintf(stderr, "Could not find encryption start marker, the byte code seems to be corrupted");
