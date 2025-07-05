@@ -1,4 +1,3 @@
-#include "../stub_bytes.h"
 #include "inc/utils.h"
 #include "inc/woody.h"
 #include "unistd.h"
@@ -136,25 +135,25 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
 
     inject_xor_key(shellcode, shellcode_size, key);
 
-    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), header.e_entry, 0x4242424242424242, 1) != 0) {
+    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 1) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
         return 1;
     }
     printf("Injected original entrypoint (0x%lx) into payload\n", header.e_entry);
 
-    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), text_start_aligned, 0x6969696969696969, 1) != 0) {
+    if (overwrite_entrypoint(shellcode, shellcode_size, text_start_aligned, 0x6969696969696969, 1) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corrupted\n");
         return 1;
     }
     printf("Injected page-aligned .text section start address (0x%lx) into payload\n", text_start_aligned);
 
-    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), encryption_start, 0x6666666666666666, 1) != 0) {
+    if (overwrite_entrypoint(shellcode, shellcode_size, encryption_start, 0x6666666666666666, 1) != 0) {
         fprintf(stderr, "Could not find encryption start marker, the byte code seems to be corrupted");
         return 1;
     }
     printf("Injected start address of section to be encrypted (0x%lx) into payload\n", encryption_start);
 
-    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), encryption_size, 0x3333333333333333, 2) != 0) {
+    if (overwrite_entrypoint(shellcode, shellcode_size, encryption_size, 0x3333333333333333, 2) != 0) {
         fprintf(stderr, "Could not find encryption size marker, the byte code seems to be corrupted");
         return 1;
     }
@@ -168,8 +167,8 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
         return 1;
     }
 
-    int bytes_written = write(fd, decryption_stub, sizeof(decryption_stub));
-    if (bytes_written != sizeof(decryption_stub)) {
+    int bytes_written = write(fd, shellcode, shellcode_size);
+    if (bytes_written != shellcode_size) {
         perror("write");
         return 1;
     }
@@ -190,8 +189,8 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
 
     if (fd_set_to_ph_offset(fd, header, program_header)) return 1;
 
-    program_header.p_filesz += sizeof(decryption_stub);
-    program_header.p_memsz += sizeof(decryption_stub);
+    program_header.p_filesz += shellcode_size;
+    program_header.p_memsz += shellcode_size;
     write(fd, &program_header, sizeof(Elf64_Phdr));
     return 0;
 }
