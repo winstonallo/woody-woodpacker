@@ -32,7 +32,7 @@ stub_bytes.h: $(SRC_DIR)/stub/decrypt.asm
 	@objcopy -O binary $(STUB_OBJ_DIR)/stub.o $(STUB_OBJ_DIR)/stub.bin
 	@echo "// Auto-generated stub code" > stub_bytes.h
 	@echo "unsigned char decryption_stub[] = {" >> stub_bytes.h
-	@xxd -i < stub.bin | sed 's/^/	/' >> stub_bytes.h
+	@xxd -i < $(STUB_OBJ_DIR)/stub.bin | sed 's/^/	/' >> stub_bytes.h
 	@echo "};" >> stub_bytes.h
 
 $(OBJ_DIR)/%.o: $(SRC_DIR)/%.c stub_bytes.h $(HEADERS) | $(OBJ_DIR)
