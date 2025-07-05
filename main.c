@@ -356,19 +356,22 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
         fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corrupted\n");
         return 1;
     }
+    printf("Injected page-aligned .text section start address (0x%lx) into payload\n", text_start_aligned);
 
     if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), encryption_start, 0x6666666666666666, 1) != 0) {
+        fprintf(stderr, "Could not find encryption start marker, the byte code seems to be corrupted");
         return 1;
     }
+    printf("Injected start address of section to be encrypted (0x%lx) into payload\n", encryption_start);
 
-    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), encryption_size, 0x3333333333333333, 1) != 0) {
+    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), encryption_size, 0x3333333333333333, 2) != 0) {
+        fprintf(stderr, "Could not find encryption size marker, the byte code seems to be corrupted");
         return 1;
     }
+    printf("Injected size of section to be encrypted (0x%lx) into payload\n", encryption_size);
 
-    printf("text_start_aligned: %lx\n", text_start_aligned);
-    printf("size: %lx\n", size);
+    print_payload(shellcode, shellcode_size);
 
-    // copy shellcode
     int off = lseek(fd, code_cave.start, SEEK_SET);
     if (off == -1) {
         perror("lseek");
