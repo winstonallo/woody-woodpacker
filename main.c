@@ -337,16 +337,12 @@ int
 shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t code_cave, uint8_t shellcode[], const uint64_t shellcode_size, int fd,
                  const uint8_t key[16], const uint64_t encryption_start, const uint64_t encryption_size) {
 
-    printf("encryption_start: %lx\n", encryption_start);
-    printf("encryption_size: %lx\n", encryption_size);
-
     const uint64_t page_size = 0x1000;
     // round down to nearest page boundary for mprotect call (~(page_size - 1) = ~0xfff = 0xFFFFFFFFFFFFF000)
     const uint64_t text_start_aligned = program_header.p_vaddr & ~(page_size - 1);
     const uint64_t text_end = program_header.p_vaddr + program_header.p_filesz;
     // round up to next page boundary (same logic as for text_start_aligned)
     const uint64_t text_end_aligned = (text_end + page_size - 1) & ~(page_size - 1);
-    const uint64_t size = text_end - text_start_aligned;
 
     inject_xor_key(shellcode, shellcode_size, key);
 
@@ -354,11 +350,7 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
         fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
         return 1;
     }
-
-    if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), size, 0x2424242424242424, 1) != 0) {
-        fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corrupted\n");
-        return 1;
-    }
+    printf("Injected original entrypoint (0x%lx) into payload\n", header.e_entry);
 
     if (overwrite_entrypoint(decryption_stub, sizeof(decryption_stub), text_start_aligned, 0x6969696969696969, 1) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corrupted\n");
