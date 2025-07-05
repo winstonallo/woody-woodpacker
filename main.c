@@ -302,7 +302,6 @@ overwrite_entrypoint(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoin
             found++;
         }
 
-        // replaced all occurrences of the marker
         if (found == occurrences) {
             break;
         }
@@ -320,9 +319,11 @@ inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint
         while (marker[j] == shellcode[i + j]) {
             if (j == 15) {
                 ft_memcpy((uint8_t *)&shellcode[i], key, 16);
-                print_payload((uint8_t *)key, 16);
-                print_payload((uint8_t *)shellcode, shellcode_size);
-                printf("Injected decryption key into binary at position %lu\n", i);
+                char decryption_key_hex[32];
+                for (int byte_idx = 0; byte_idx < 16; ++byte_idx) {
+                    snprintf(decryption_key_hex + byte_idx * 2, 3, "%02x", key[byte_idx]);
+                }
+                printf("Injected decryption key %s into payload at position %lu\n", decryption_key_hex, i);
                 return 0;
             }
             j++;
