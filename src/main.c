@@ -8,6 +8,7 @@
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <sys/types.h>
 #include <unistd.h>
@@ -50,6 +51,24 @@ file_mmap(const char *file_name, file *file) {
 }
 
 int
+file_write(file file) {
+    int fd = open("woody", O_CREAT | O_WRONLY);
+    if (fd == -1) {
+        perror("woody");
+        return 1;
+    }
+    size_t bytes_written = write(fd, file.mem, file.size);
+    if (bytes_written != file.size) {
+        close(fd);
+        perror("woody");
+        return 1;
+    }
+
+    close(fd);
+    return 0;
+}
+
+int
 main(int ac, char **av) {
     if (ac != 2 && ac != 3) {
         printf("wrong usage: ./woody BINARY_NAME [ENCRYPTION_KEY(16 bytes)]\n");
@@ -72,7 +91,7 @@ main(int ac, char **av) {
     printf("Found section header which includes the entry point: 0x%lx - 0x%lx\n", section_header_entry->sh_offset,
            section_header_entry->sh_offset + section_header_entry->sh_size);
 
-    const Elf64_Phdr *program_header_entry = program_header_by_section_header_get(file, *header, *section_header_entry);
+    Elf64_Phdr *program_header_entry = program_header_by_section_header_get(file, *header, *section_header_entry);
     if (program_header_entry == NULL) return 1;
     printf("Found program header which includes the section header: 0x%lx - 0x%lx\n", program_header_entry->p_offset,
            program_header_entry->p_offset + program_header_entry->p_filesz);
@@ -85,18 +104,18 @@ main(int ac, char **av) {
     if (code_cave_get(file, &code_cave, *header, program_header_entry->p_offset, program_header_after_entry->p_offset)) return 1;
     printf("Found biggest code cave from 0x%lx - 0x%lx\n", code_cave.start, code_cave.start + code_cave.size);
 
-    const uint64_t encrytion_start = program_header_entry->p_vaddr + (section_header_entry->sh_offset - program_header_entry->p_offset);
+    if (shellcode_overwrite_markers(decryption_stub, sizeof(decryption_stub), *header, *section_header_entry, *program_header_entry, key)) return 1;
 
-    // if (shellcode_inject(*header, *program_header_entry, code_cave, decryption_stub, sizeof(decryption_stub), file, key, encrytion_start,
-    //                      section_header_entry.sh_size)) return 1;
-    //     close(file);
-    //     return 1;
-    // }
+    memcpy(file.mem + code_cave.start, decryption_stub, sizeof(decryption_stub));
 
-    // if (section_text_encrypt(section_header_entry, file, key)) {
-    //     close(file);
-    //     return 1;
-    // }
+    header->e_entry = program_header_entry->p_vaddr + (code_cave.start - program_header_entry->p_offset);
 
-    // close(file);
+    program_header_entry->p_filesz += sizeof(decryption_stub);
+    program_header_entry->p_memsz += sizeof(decryption_stub);
+
+    section_text_encrypt(file, *section_header_entry, key);
+
+    if (file_write(file)) return 1;
+
+    return 0;
 }

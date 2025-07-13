@@ -1,4 +1,5 @@
 #include "inc/utils.h"
+#include <assert.h>
 #include "inc/woody.h"
 #include <elf.h>
 #include <fcntl.h>
@@ -34,36 +35,17 @@ key_create(int ac, char **av, u_int8_t *key) {
     return 0;
 }
 
-int
-section_text_encrypt(const Elf64_Shdr section_header_entry, int fd, const uint8_t key[16]) {
+void
+section_text_encrypt(file file, const Elf64_Shdr section_header, const uint8_t key[16]) {
+    assert(file.mem != NULL);
 
-    size_t off = lseek(fd, section_header_entry.sh_offset, SEEK_SET);
-    if (off != section_header_entry.sh_offset) {
-        perror("lseek");
-        return 1;
+    const uint64_t start = section_header.sh_offset;
+    const uint64_t size = section_header.sh_size;
+
+    assert(file.size >= start + size);
+
+    for (size_t i = 0; i < size; i++) {
+        uint8_t *enc = file.mem + start + i;
+        *enc ^= key[i % 16];
     }
-
-    uint8_t enc;
-    for (size_t i = 0; i < section_header_entry.sh_size; i++) {
-        int bytes_read = read(fd, &enc, 1);
-        if (bytes_read != 1) {
-            perror("read");
-            return 1;
-        }
-
-        enc ^= key[i % 16];
-
-        int off = lseek(fd, -1, SEEK_CUR);
-        if (off == -1) {
-            perror("lseek");
-            return 1;
-        }
-
-        int bytes_written = write(fd, &enc, 1);
-        if (bytes_written != 1) {
-            perror("read");
-            return 1;
-        }
-    }
-    return 0;
 }
