@@ -15,6 +15,7 @@ SRCS = \
 	elf_segments.c \
 	encrypt.c \
 	inject.c \
+	file.c \
 	main.c
 
 OBJS = $(addprefix $(OBJ_DIR)/, $(SRCS:.c=.o))
