@@ -1,4 +1,3 @@
-#include "inc/utils.h"
 #include "inc/woody.h"
 #include <assert.h>
 #include <elf.h>
@@ -16,7 +15,7 @@ program_header_by_section_header_get(file file, const Elf64_Ehdr header, const E
     Elf64_Phdr *program_header_table = file.mem + header.e_phoff;
 
     for (int i = 0; i < header.e_phnum; i++) {
-         Elf64_Phdr *ph = program_header_table + i;
+        Elf64_Phdr *ph = program_header_table + i;
 
         const uint64_t ph_start = ph->p_offset;
         const uint64_t ph_end = ph->p_offset + ph->p_filesz;
@@ -48,7 +47,7 @@ program_header_get_after(file file, const Elf64_Ehdr header, const Elf64_Phdr pr
                 continue;
             }
 
-            const uint64_t distance_cur =  ph->p_offset - program_header.p_offset;
+            const uint64_t distance_cur = ph->p_offset - program_header.p_offset;
             const uint64_t distance_old = ph->p_offset - program_header_closest->p_offset;
             if (distance_cur < distance_old) program_header_closest = ph;
         }

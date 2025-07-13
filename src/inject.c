@@ -1,6 +1,5 @@
 #include "inc/utils.h"
 #include "inc/woody.h"
-#include "unistd.h"
 #include <elf.h>
 #include <stdbool.h>
 #include <stddef.h>

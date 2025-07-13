@@ -1,6 +1,4 @@
-#include <ctype.h>
 #include <stdint.h>
-#include <stdio.h>
 
 // Parses 16 hex bytes (32 characters) into a 16 bytes array (`out`).
 //
