@@ -50,7 +50,7 @@ file_mmap(const char *file_name, file *file) {
 
 int
 file_write(file file) {
-    int fd = open("woody", O_CREAT | O_WRONLY);
+    int fd = open("woody", O_CREAT | O_RDWR, 0755);
     if (fd == -1) {
         perror("woody");
         return 1;
