@@ -11,6 +11,8 @@ RUN apt-get update && apt-get install -y \
 	git \
 	pkg-config \
 	man \
+	xxd \
+	nasm \
 	&& rm -rf /var/lib/apt/lists/*
 
 RUN echo 'export PS1="\W> "' >> ~/.bashrc

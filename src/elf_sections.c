@@ -1,34 +1,24 @@
-#include "inc/utils.h"
+#include "inc/woody.h"
 #include <assert.h>
 #include <elf.h>
 #include <stddef.h>
 #include <stdio.h>
 #include <unistd.h>
 
-int
-section_header_entry_get(const Elf64_Ehdr header, Elf64_Shdr *section_header_entry, int fd) {
-    assert(section_header_entry != NULL);
+const Elf64_Shdr *
+section_header_entry_get(file file, const Elf64_Ehdr header) {
+    assert(file.mem != NULL);
+    assert(header.e_shoff + header.e_shnum * header.e_shentsize <= file.size);
 
-    size_t off = lseek(fd, header.e_shoff, SEEK_SET);
-    if (off != header.e_shoff) {
-        perror("lseek - section_header_entry_get fd");
-        return 1;
-    }
+    const Elf64_Shdr *section_header_table = file.mem + header.e_shoff;
 
-    Elf64_Shdr sh;
     for (int i = 0; i < header.e_shnum; i++) {
-        int bytes_read = read(fd, &sh, sizeof(Elf64_Shdr));
-        if (bytes_read != sizeof(Elf64_Shdr)) {
-            perror("read");
-            return 1;
-        }
-
-        if (sh.sh_addr <= header.e_entry && (sh.sh_addr + sh.sh_size) > header.e_entry) {
-            *section_header_entry = sh;
-            return 0;
+        const Elf64_Shdr *sh = section_header_table + i;
+        if (sh->sh_addr <= header.e_entry && (sh->sh_addr + sh->sh_size) > header.e_entry) {
+            return sh;
         }
     }
 
-    put_str(STDERR_FILENO, "could not find section header that is pointed to by e_entry\n");
-    return 2;
+    fprintf(stderr, "error: could not find section header that is pointed to by e_entry\n");
+    return NULL;
 }
