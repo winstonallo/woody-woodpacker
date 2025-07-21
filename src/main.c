@@ -39,7 +39,6 @@ main(int ac, char **av) {
         file_munmap(file);
         return 1;
     }
-
     printf("Found section header which includes the entry point: 0x%lx - 0x%lx\n", section_header_entry->sh_offset,
            section_header_entry->sh_offset + section_header_entry->sh_size);
 
