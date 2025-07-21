@@ -1,9 +1,9 @@
 #include "inc/utils.h"
 #include "inc/woody.h"
-#include "unistd.h"
 #include <elf.h>
 #include <stdbool.h>
 #include <stddef.h>
+#include <stdint.h>
 #include <stdio.h>
 #include "mem.h"
 
@@ -66,39 +66,28 @@ print_payload(uint8_t *payload, size_t payload_size) {
     printf("\n");
 }
 int
-code_cave_get(const Elf64_Ehdr header, const uint64_t ph_start, const uint64_t ph_end, code_cave_t *code_cave, int fd) {
-    size_t off = lseek(fd, header.e_shoff, SEEK_SET);
-    if (off != header.e_shoff) {
-        perror("lseek - fd");
-        return 1;
-    }
-
-    int bytes_read;
-
-    Elf64_Shdr section_header;
-
-    uint64_t last_section_end = ph_start;
-    uint64_t next_section_start;
-
+code_cave_get(file file, code_cave_t *code_cave, const Elf64_Ehdr header, const uint64_t start, const uint64_t end) {
     uint64_t code_cave_biggest_start = 0;
     uint64_t code_cave_biggest_end = 0;
 
+    uint64_t last_section_end = start;
+    uint64_t next_section_start;
+
+    const Elf64_Shdr *section_header_table = file.mem + header.e_shoff;
+
     for (int i = 0; i < header.e_shnum; i++) {
-        bytes_read = read(fd, &section_header, sizeof(Elf64_Shdr));
-        if (bytes_read != sizeof(Elf64_Shdr)) {
-            perror("read");
-            return 1;
-        }
+        const Elf64_Shdr *sh = section_header_table + i;
 
-        const uint64_t sh_start = section_header.sh_offset;
-        const uint64_t sh_end = section_header.sh_offset + section_header.sh_size;
+        const uint64_t sh_start = sh->sh_offset;
+        const uint64_t sh_end = sh->sh_offset + sh->sh_size;
 
-        const uint16_t section_is_inside_program_header = sh_start >= ph_start && sh_end <= ph_end;
+        const uint8_t section_is_inside_program_header = sh_start >= start && sh_end <= end;
         if (section_is_inside_program_header) {
             next_section_start = sh_start;
-            uint64_t code_cave_size_cur = next_section_start - last_section_end;
 
+            uint64_t code_cave_size_cur = next_section_start - last_section_end;
             uint64_t code_cave_biggest_size = code_cave_biggest_end - code_cave_biggest_start;
+
             if (code_cave_biggest_size < code_cave_size_cur) {
                 code_cave_biggest_start = last_section_end;
                 code_cave_biggest_end = next_section_start;
@@ -108,7 +97,7 @@ code_cave_get(const Elf64_Ehdr header, const uint64_t ph_start, const uint64_t p
         }
     }
 
-    next_section_start = ph_end;
+    next_section_start = end;
     uint64_t code_cave_size_cur = next_section_start - last_section_end;
 
     uint64_t code_cave_biggest_size = code_cave_biggest_end - code_cave_biggest_start;
@@ -125,9 +114,11 @@ code_cave_get(const Elf64_Ehdr header, const uint64_t ph_start, const uint64_t p
 }
 
 int
-shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t code_cave, uint8_t shellcode[], const uint64_t shellcode_size, int fd,
-                 const uint8_t key[16], const uint64_t encryption_start, const uint64_t encryption_size) {
+shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, const Elf64_Ehdr header, const Elf64_Shdr section_header,
+                            const Elf64_Phdr program_header, const uint8_t key[16]) {
 
+    const uint64_t encryption_start = program_header.p_vaddr + (section_header.sh_offset - program_header.p_offset);
+    const uint64_t encryption_size = section_header.sh_size;
     const uint64_t page_size = 0x1000;
     // round down to nearest page boundary for mprotect call (~(page_size - 1) = ~0xfff = 0xFFFFFFFFFFFFF000)
     const uint64_t text_start_aligned = program_header.p_vaddr & ~(page_size - 1);
@@ -159,37 +150,5 @@ shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_cave_t
     printf("Injected size of section to be encrypted (0x%lx) into payload\n", encryption_size);
 
     print_payload(shellcode, shellcode_size);
-
-    int off = lseek(fd, code_cave.start, SEEK_SET);
-    if (off == -1) {
-        perror("lseek");
-        return 1;
-    }
-
-    size_t bytes_written = write(fd, shellcode, shellcode_size);
-    if (bytes_written != shellcode_size) {
-        perror("write");
-        return 1;
-    }
-
-    header.e_entry = program_header.p_vaddr + (code_cave.start - program_header.p_offset);
-
-    off = lseek(fd, 0, SEEK_SET);
-    if (off == -1) {
-        perror("lseek");
-        return 1;
-    }
-
-    bytes_written = write(fd, &header, sizeof(Elf64_Ehdr));
-    if (bytes_written != sizeof(Elf64_Ehdr)) {
-        perror("write");
-        return 1;
-    }
-
-    if (fd_set_to_ph_offset(fd, header, program_header)) return 1;
-
-    program_header.p_filesz += shellcode_size;
-    program_header.p_memsz += shellcode_size;
-    write(fd, &program_header, sizeof(Elf64_Phdr));
     return 0;
 }

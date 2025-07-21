@@ -1,86 +1,63 @@
-#include "inc/utils.h"
+#include "inc/woody.h"
 #include <assert.h>
 #include <elf.h>
 #include <stdio.h>
 #include "str.h"
 #include <unistd.h>
 
-int
-program_header_by_section_header_get(const Elf64_Ehdr header, const Elf64_Shdr section_header, Elf64_Phdr *program_header_res, int fd) {
-    assert(program_header_res != NULL);
-
-    size_t off = lseek(fd, header.e_phoff, SEEK_SET);
-    if (off != header.e_phoff) {
-        perror("lseek - fd");
-        return 1;
-    }
+Elf64_Phdr *
+program_header_by_section_header_get(file file, const Elf64_Ehdr header, const Elf64_Shdr section_header) {
+    assert(file.mem != NULL);
+    assert(header.e_phoff + header.e_phnum * header.e_phentsize <= file.size);
 
     const uint64_t sh_start = section_header.sh_offset;
-    const uint64_t sh_end = section_header.sh_offset + section_header.sh_size;
+    const uint64_t sh_end = section_header.sh_offset + section_header.sh_size - 1;
 
-    Elf64_Phdr ph;
+    Elf64_Phdr *program_header_table = file.mem + header.e_phoff;
+
     for (int i = 0; i < header.e_phnum; i++) {
-        int bytes_read = read(fd, &ph, sizeof(Elf64_Phdr));
-        if (bytes_read != sizeof(Elf64_Phdr)) {
-            perror("read");
-            return 1;
-        }
+        Elf64_Phdr *ph = program_header_table + i;
 
-        const uint64_t ph_start = ph.p_offset;
-        const uint64_t ph_end = ph.p_offset + ph.p_filesz;
+        const uint64_t ph_start = ph->p_offset;
+        const uint64_t ph_end = ph->p_offset + ph->p_filesz;
 
         const uint16_t section_is_inside_program_header = sh_start >= ph_start && sh_end <= ph_end;
         if (section_is_inside_program_header) {
-            *program_header_res = ph;
-            return 0;
+            return ph;
         }
     }
 
-    char *error = "could not find program header with section header inside";
-    write(STDOUT_FILENO, error, ft_strlen(error));
-    return 2;
+    fprintf(stderr, "could not find program header with section header inside\n");
+    return NULL;
 }
 
-int
-program_header_get_next(const Elf64_Ehdr header, const Elf64_Phdr program_header_cur, Elf64_Phdr *program_header_next, int fd) {
-    assert(program_header_next != NULL);
+const Elf64_Phdr *
+program_header_get_after(file file, const Elf64_Ehdr header, const Elf64_Phdr program_header) {
+    assert(file.mem != NULL);
+    assert(header.e_phoff + header.e_phnum * header.e_phentsize <= file.size);
 
-    size_t off = lseek(fd, header.e_phoff, SEEK_SET);
-    if (off != header.e_phoff) {
-        perror("lseek - fd");
-        return 1;
-    }
+    Elf64_Phdr *program_header_table = file.mem + header.e_phoff;
 
-    int bytes_read;
-    Elf64_Phdr program_header;
-
-    Elf64_Phdr program_header_closest = {0};
+    Elf64_Phdr *program_header_closest = NULL;
 
     for (int i = 0; i < header.e_phnum; i++) {
-        bytes_read = read(fd, &program_header, sizeof(Elf64_Phdr));
-        if (bytes_read != sizeof(Elf64_Phdr)) {
-            perror("read");
-            return 1;
-        }
-
-        if (program_header_cur.p_offset < program_header.p_offset) {
-            if (program_header_closest.p_filesz == 0) {
-                program_header_closest = program_header;
+        Elf64_Phdr *ph = program_header_table + i;
+        if (program_header.p_offset < ph->p_offset) {
+            if (program_header_closest == NULL) {
+                program_header_closest = ph;
                 continue;
             }
 
-            uint64_t distance = program_header.p_offset - program_header_cur.p_offset;
-            uint64_t distance_cur = program_header_closest.p_offset - program_header_cur.p_offset;
-            if (distance < distance_cur) program_header_closest = program_header;
+            const uint64_t distance_cur = ph->p_offset - program_header.p_offset;
+            const uint64_t distance_old = ph->p_offset - program_header_closest->p_offset;
+            if (distance_cur < distance_old) program_header_closest = ph;
         }
     }
 
-    if (program_header_closest.p_filesz == 0) {
-        char *error = "could not find program header after current one";
-        write(STDOUT_FILENO, error, ft_strlen(error));
-        return 2;
+    if (program_header_closest == NULL) {
+        fprintf(stderr, "could not find program header after current one\n");
+        return NULL;
     }
 
-    *program_header_next = program_header_closest;
-    return 0;
+    return program_header_closest;
 }

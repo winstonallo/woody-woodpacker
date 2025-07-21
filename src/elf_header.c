@@ -23,22 +23,3 @@ elf64_ident_check(const Elf64_Ehdr *header) {
     }
     return 0;
 }
-
-int
-elf_header_parse(int fd, Elf64_Ehdr *header) {
-    int off = lseek(fd, 0, SEEK_SET);
-    if (off == -1) {
-        perror("lseek - fd_new");
-        return 1;
-    }
-
-    int bytes_read = read(fd, header, sizeof(Elf64_Ehdr));
-    if (bytes_read != sizeof(Elf64_Ehdr)) {
-        perror("read");
-        return 1;
-    }
-
-    if (elf64_ident_check(header)) return 1;
-
-    return 0;
-}
