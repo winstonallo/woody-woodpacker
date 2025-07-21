@@ -1,11 +1,11 @@
 #include "inc/utils.h"
 #include "inc/woody.h"
+#include "mem.h"
 #include <elf.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
-#include "mem.h"
 
 int
 inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint8_t key[16]) {
@@ -124,6 +124,7 @@ shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, 
     const uint64_t text_start_aligned = program_header.p_vaddr & ~(page_size - 1);
 
     inject_xor_key(shellcode, shellcode_size, key);
+    printf("Size of injected shellcode: 0x%lx\n", shellcode_size);
 
     if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 1) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
