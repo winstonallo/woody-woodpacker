@@ -29,6 +29,6 @@ section_header_entry_get(const Elf64_Ehdr header, Elf64_Shdr *section_header_ent
         }
     }
 
-    put_str(STDERR_FILENO, "could not find section header that is pointed to by e_entry\n");
+    fprintf(stderr, "could not find section header that is pointed to by e_entry\n");
     return 2;
 }

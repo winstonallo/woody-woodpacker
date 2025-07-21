@@ -5,6 +5,7 @@
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdio.h>
+#include "mem.h"
 
 int
 inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint8_t key[16]) {

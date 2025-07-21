@@ -1,5 +1,6 @@
 #include "inc/utils.h"
 #include "inc/woody.h"
+#include "str.h"
 #include <elf.h>
 #include <fcntl.h>
 #include <stddef.h>
