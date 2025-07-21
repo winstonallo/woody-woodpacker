@@ -7,6 +7,11 @@
 #include <unistd.h>
 
 int
+file_munmap(const file file) {
+    return munmap(file.mem, file.size);
+}
+
+int
 file_mmap(const char *file_name, file *file) {
     assert(file_name != NULL);
     assert(file != NULL);

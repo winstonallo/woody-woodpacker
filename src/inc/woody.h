@@ -30,5 +30,6 @@ int shellcode_inject(Elf64_Ehdr header, Elf64_Phdr program_header, const code_ca
                      const uint8_t key[16], const uint64_t encryption_start, const uint64_t encryption_size);
 void section_text_encrypt(file file, const Elf64_Shdr section_header, const uint8_t key[16]);
 int file_mmap(const char *file_name, file *file);
+int file_munmap(const file file);
 int file_write(file file);
 #endif
