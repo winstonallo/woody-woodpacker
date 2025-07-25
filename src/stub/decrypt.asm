@@ -108,3 +108,13 @@ call_original_code:
     ;jmp rax
 
     jmp -0x1dd
+
+    ;mov rax, ENTRYPOINT_MARKER
+    ;lea rax, [rel call_original_code]
+    ;add rax, 0xfffffe23
+    ;jmp rax
+
+    ;jmp 0xfffffe23 test.c (sample)
+    ;jmp -0xdb144
+
+; ((code_cave_start + sizeof(shellcode)) - og_entrypoint) + 5
