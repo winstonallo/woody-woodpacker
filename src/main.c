@@ -76,7 +76,7 @@ main(int ac, char **av) {
     program_header_entry->p_filesz += sizeof(decryption_stub);
     program_header_entry->p_memsz += sizeof(decryption_stub);
 
-    section_text_encrypt(file, *section_header_entry, key);
+    // section_text_encrypt(file, *section_header_entry, key);
 
     if (file_write(file)) {
         file_munmap(file);

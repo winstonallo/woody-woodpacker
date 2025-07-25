@@ -28,10 +28,16 @@ _start:
     pop rdi
     pop rax
 
-    call start_decryption
+    ;mov rax, SYS_EXIT
+    ;mov rdi, 1
+    ;syscall
+
+    call call_original_code
+    ;call start_decryption
 
 woody_string:
     db '....WOODY....', 10
+
 
 xor_key:
     db 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
@@ -77,26 +83,28 @@ xor_loop:
     and r8, 0xf
     jmp xor_loop
 
-call_original_code:
-    mov rax, SYS_MPROTECT
-    mov rdi, MPROTECT_ADDR_MARKER
-    mov rsi, DECRYPT_LEN_MARKER
-    mov rdx, PROT_READ | PROT_EXEC
-    syscall
-
-    pop r11
-    pop r10
-    pop r9
-    pop r8
-    pop rdx
-    pop rsi
-    pop rdi
-    pop rax
-
-    mov rax, ENTRYPOINT_MARKER
-    jmp rax
-
 error:
     mov rax, SYS_EXIT
     mov rdi, 1
     syscall
+
+call_original_code:
+    ;mov rax, SYS_MPROTECT
+    ;mov rdi, MPROTECT_ADDR_MARKER
+    ;mov rsi, DECRYPT_LEN_MARKER
+    ;mov rdx, PROT_READ | PROT_EXEC
+    ;syscall
+
+    ;pop r11
+    ;pop r10
+    ;pop r9
+    ;pop r8
+    ;pop rdx
+    ;pop rsi
+    ;pop rdi
+    ;pop rax
+
+    ;mov rax, ENTRYPOINT_MARKER
+    ;jmp rax
+
+    jmp -0x1dd

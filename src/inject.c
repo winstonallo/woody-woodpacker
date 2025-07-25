@@ -1,4 +1,3 @@
-#include "inc/utils.h"
 #include "inc/woody.h"
 #include "mem.h"
 #include <elf.h>
@@ -126,7 +125,7 @@ shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, 
     inject_xor_key(shellcode, shellcode_size, key);
     printf("Size of injected shellcode: 0x%lx\n", shellcode_size);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 1) != 0) {
+    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 0) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
         return 1;
     }
@@ -149,6 +148,15 @@ shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, 
         return 1;
     }
     printf("Injected size of section to be encrypted (0x%lx) into payload\n", encryption_size);
+
+    // temporarily hardcoded, should come from code_cave.start
+    const size_t shellcode_start_offset = 0x1171;
+    const size_t jmp_instruction_offset = shellcode_start_offset + shellcode_size;
+    ssize_t rel_offset = encryption_start - (jmp_instruction_offset + 1);
+    if (rel_offset < 0) rel_offset *= -1;
+
+    printf("jmp_instruction_offset: 0x%lx\n", jmp_instruction_offset);
+    printf("rel_offset: 0x%lx\n", rel_offset);
 
     print_payload(shellcode, shellcode_size);
     return 0;
