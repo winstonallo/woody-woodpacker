@@ -1,0 +1,5 @@
+-Iinc
+-Ilibft/inc
+-Wall
+-Wextra
+-Werror
