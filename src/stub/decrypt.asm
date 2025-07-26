@@ -64,13 +64,13 @@ get_base:
 
     push rax
 
+    sub sp, 16
+
     xor r10, r10
     xor r8, r8
     xor rdi, rdi
     xor rbx, rbx
     xor rdx, rdx
-
-    sub sp, 16
 
     mov rdx, 1
     lea rsi, [rsp]
@@ -92,7 +92,7 @@ read_proc_map:
     jle num
 
 alpha:
-    sub r8b, 0x57
+    sub r8b, 'a' - 10
     jmp load
 
 num:
