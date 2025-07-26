@@ -27,7 +27,6 @@ _start:
     mov rdx, 14
     syscall
 
-
     call get_base
 
     pop rdx
@@ -36,6 +35,8 @@ _start:
     pop rax
 
     jmp jmp_to_original_code
+    jmp start_decryption
+
 
     mov rax, SYS_EXIT
     mov rdi, 0
@@ -53,7 +54,7 @@ get_base:
     xor rax, rax
     xor rdi, rdi
 
-    xor rsi, rsi ; O_RDONLY
+    mov rsi, 0 ; O_RDONLY
     lea rdi, [rel proc_file_path]
     mov rax, SYS_OPEN
     syscall
@@ -61,7 +62,7 @@ get_base:
     cmp eax, 0
     jl error
 
-    push rax ; save fd
+    push rax ; fd
 
     xor r10, r10
     xor r8, r8
@@ -69,12 +70,11 @@ get_base:
     xor rbx, rbx
     xor rdx, rdx
 
-    sub sp, 16 ; allocate 16 bytes on the stack for buffer
+    sub sp, 16 ; 16 bytes stack buffer
 
-    ; int read(int fd, void* buf, int n)
-    mov rdx, 1 ; n
-    lea rsi, [rsp] ; *buf
-    mov edi, eax ; fd
+    mov rdx, 1
+    lea rsi, [rsp]
+    mov edi, eax
 
 read_proc_map:
     ; read one byte
@@ -119,12 +119,74 @@ non_pie:
    pop r15
    ret
 
+start_decryption:
+    push rax
+    push rdi
+    push rsi
+    push rdx
+
+    mov rax, SYS_MPROTECT
+    mov rdi, ENTRYPOINT_MARKER
+    add rdi, rbx
+    and rdi, ~0xfff ; page alignment
+    mov rsi, DECRYPT_LEN_MARKER
+    mov rdx, PROT_READ | PROT_WRITE | PROT_EXEC
+    syscall
+
+    test rax, rax
+    js error
+
+    push r8
+    push r9
+    push r10
+    push r11
+
+    lea r11, [rel xor_key]
+    mov rsi, DECRYPT_START_OFFSET_MARKER
+    add rsi, rbx ; add base address
+    mov rcx, DECRYPT_LEN_MARKER
+    mov rdx, 0
+    mov r8, 0
+
+xor_loop:
+    cmp rdx, rcx
+    jge jmp_to_original_code
+
+    mov r9b, [rsi + rdx]
+    mov r10b, [r11 + r8]
+
+    xor r9b, r10b
+    xor r9b, r10b
+    mov [rsi + rdx], r9b
+
+    inc rdx
+    inc r8
+    and r8, 0xf
+    jmp xor_loop
+
+
 error:
     mov rax, SYS_EXIT
     mov rdi, 1
     syscall
 
 jmp_to_original_code:
+    ;mov rax, SYS_MPROTECT
+    ;mov rdi, ENTRYPOINT_MARKER
+    ;add rdi, rbx
+    ;and rdi, ~0xfff
+    ;mov rsi, DECRYPT_LEN_MARKER
+    ;mov rdx, PROT_READ | PROT_EXEC
+    ;
+    ;pop r11
+    ;pop r10
+    ;pop r9
+    ;pop r8
+    ;pop rdx
+    ;pop rsi
+    ;pop rdi
+    ;pop rax
+
     mov rdi, ENTRYPOINT_MARKER
     add rdi, rbx
     jmp rdi
@@ -133,3 +195,5 @@ woody_string:
     db "....WOODY....",10
 proc_file_path:
     db "/proc/self/maps",0
+xor_key:
+   db 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
