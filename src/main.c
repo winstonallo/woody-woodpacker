@@ -62,6 +62,11 @@ main(int ac, char **av) {
         file_munmap(file);
         return 1;
     }
+    if (code_cave.size < sizeof(decryption_stub)) {
+        printf("code cave too small: code cave - %li bytes | shellcode %li bytes\n", code_cave.size, sizeof(decryption_stub));
+        file_munmap(file);
+        return 1;
+    }
     printf("Found biggest code cave from 0x%lx - 0x%lx\n", code_cave.start, code_cave.start + code_cave.size);
 
     if (code_cave.size < sizeof(decryption_stub)) {
