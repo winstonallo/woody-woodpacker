@@ -27,7 +27,7 @@ LIBFT = $(LIBFT_DIR)/libft.a
 LIBFT_FLAGS = -L$(LIBFT_DIR) -lft
 
 CC = cc
-CFLAGS = -Wall -Wextra -Werror -I$(INC_DIR) -I$(LIBFT_DIR)/inc
+CFLAGS = -Wall -Wextra -Werror -I$(INC_DIR) -I$(LIBFT_DIR)/inc -DEXTERNAL_FUNCTIONS_ALLOWED=0
 LDFLAGS = $(LIBFT_FLAGS)
 
 all: $(LIBFT) $(NAME)
