@@ -117,12 +117,7 @@ code_cave_get(file file, code_cave_t *code_cave, const Elf64_Ehdr header, const 
 int
 shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, const Elf64_Ehdr header, const Elf64_Shdr section_header,
                             const Elf64_Phdr program_header, const uint8_t key[16]) {
-                                (void)header;
-                                (void)program_header;
     const uint64_t encryption_start = program_header.p_vaddr + (section_header.sh_offset - program_header.p_offset);
-    // const uint64_t page_size = 0x1000;
-    // round down to nearest page boundary for mprotect call (~(page_size - 1) = ~0xfff = 0xFFFFFFFFFFFFF000)
-    // const uint64_t text_start_aligned = program_header.p_vaddr & ~(page_size - 1);
 
     if (inject_xor_key(shellcode, shellcode_size, key) != 0) {
         fprintf(stderr, "Could not find stub marker for the XOR decryption key, the byte code seems to be corrupted.\n");
@@ -141,12 +136,6 @@ shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, 
         return 1;
     }
     printf("Injected original entrypoint (0x%lx) into payload\n", header.e_entry);
-
-    // if (overwrite_entrypoint(shellcode, shellcode_size, text_start_aligned, 0x6969696969696969, 1) != 0) {
-    //     fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corrupted\n");
-    //     return 1;
-    // }
-    // printf("Injected page-aligned segment of the .text section start address (0x%lx) into payload\n", text_start_aligned);
 
     if (overwrite_entrypoint(shellcode, shellcode_size, encryption_start, 0x6666666666666666, 3) != 0) {
         fprintf(stderr, "Could not find encryption start marker, the byte code seems to be corrupted");
