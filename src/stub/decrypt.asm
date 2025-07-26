@@ -2,6 +2,7 @@ ENTRYPOINT_MARKER: equ 0x4242424242424242
 MPROTECT_ADDR_MARKER: equ 0x6969696969696969
 DECRYPT_START_OFFSET_MARKER: equ 0x6666666666666666
 DECRYPT_LEN_MARKER: equ 0x3333333333333333
+IS_PIE: equ 0x0
 
 SYS_READ: equ 0
 SYS_WRITE: equ 1
@@ -41,6 +42,14 @@ _start:
     syscall
 
 get_base:
+    push r15
+    mov r15, IS_PIE
+    cmp r15, 0
+
+    je non_pie
+
+    pop r15
+
     xor rax, rax
     xor rdi, rdi
 
@@ -104,6 +113,11 @@ break:
     syscall
 
     ret
+
+non_pie:
+   mov rbx, 0 ; base address for non-PIE
+   pop r15
+   ret
 
 error:
     mov rax, SYS_EXIT
