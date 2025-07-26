@@ -158,7 +158,6 @@ xor_loop:
     and r8, 0xf
     jmp xor_loop
 
-
 error:
     mov rax, SYS_EXIT
     mov rdi, 1
