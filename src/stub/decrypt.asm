@@ -34,6 +34,8 @@ _start:
     pop rdi
     pop rax
 
+    jmp jmp_to_original_code
+
     mov rax, SYS_EXIT
     mov rdi, 0
     syscall
@@ -107,6 +109,11 @@ error:
     mov rax, SYS_EXIT
     mov rdi, 1
     syscall
+
+jmp_to_original_code:
+    mov rdi, ENTRYPOINT_MARKER
+    add rdi, rbx
+    jmp rdi
 
 woody_string:
     db "....WOODY....",10
