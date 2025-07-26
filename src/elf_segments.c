@@ -2,7 +2,6 @@
 #include <assert.h>
 #include <elf.h>
 #include <stdio.h>
-#include "str.h"
 #include <unistd.h>
 
 Elf64_Phdr *

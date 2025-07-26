@@ -138,13 +138,13 @@ shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, 
     printf("Injected original entrypoint (0x%lx) into payload\n", header.e_entry);
 
     if (overwrite_entrypoint(shellcode, shellcode_size, encryption_start, 0x6666666666666666, 3) != 0) {
-        fprintf(stderr, "Could not find encryption start marker, the byte code seems to be corrupted");
+        fprintf(stderr, "Could not find encryption start marker, the byte code seems to be corrupted\n");
         return 1;
     }
     printf("Injected start address of section to be encrypted (0x%lx) into payload\n", encryption_start);
 
     if (overwrite_entrypoint(shellcode, shellcode_size, section_header.sh_size, 0x3333333333333333, 3) != 0) {
-        fprintf(stderr, "Could not find encryption size marker, the byte code seems to be corrupted");
+        fprintf(stderr, "Could not find encryption size marker, the byte code seems to be corrupted\n");
         return 1;
     }
     printf("Injected size of section to be encrypted (0x%lx) into payload\n", section_header.sh_size);
