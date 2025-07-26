@@ -39,7 +39,7 @@ main(int ac, char **av) {
         file_munmap(file);
         return 1;
     }
-    printf("Found section header which includes the entry point: 0x%lx - 0x%lx\n", section_header_entry->sh_offset,
+    printf("Found section header including the program entry point: 0x%lx - 0x%lx\n", section_header_entry->sh_offset,
            section_header_entry->sh_offset + section_header_entry->sh_size);
 
     Elf64_Phdr *program_header_entry = program_header_by_section_header_get(file, *header, *section_header_entry);
@@ -47,7 +47,7 @@ main(int ac, char **av) {
         file_munmap(file);
         return 1;
     }
-    printf("Found program header which includes the section header: 0x%lx - 0x%lx\n", program_header_entry->p_offset,
+    printf("Found program header including the section header: 0x%lx - 0x%lx\n", program_header_entry->p_offset,
            program_header_entry->p_offset + program_header_entry->p_filesz);
 
     const Elf64_Phdr *program_header_after_entry = program_header_get_after(file, *header, *program_header_entry);
@@ -55,7 +55,7 @@ main(int ac, char **av) {
         file_munmap(file);
         return 1;
     }
-    printf("Found closest program header to the entry one for finding the codecave - starts at 0x%lx\n", program_header_after_entry->p_offset);
+    printf("Found program header closest to entrypoint for finding codecave at 0x%lx\n", program_header_after_entry->p_offset);
 
     code_cave_t code_cave;
     if (code_cave_get(file, &code_cave, *header, program_header_entry->p_offset, program_header_after_entry->p_offset)) {
@@ -63,7 +63,7 @@ main(int ac, char **av) {
         return 1;
     }
     if (code_cave.size < sizeof(decryption_stub)) {
-        fprintf(stderr, "Biggest code cave found (%zu bytes) is too small for decryption stub (%zu bytes) - this binary cannot be packed\n", code_cave.size, sizeof(decryption_stub));
+        fprintf(stderr, "Biggest code cave found (%zu bytes) too small for decryption stub (%zu bytes) - this binary cannot be packed\n", code_cave.size, sizeof(decryption_stub));
         file_munmap(file);
         return 1;
     }
