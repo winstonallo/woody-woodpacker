@@ -130,7 +130,7 @@ shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, 
     }
     printf("Size of injected shellcode: 0x%lx\n", shellcode_size);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 2) != 0) {
+    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 3) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
         return 1;
     }
@@ -154,7 +154,7 @@ shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, 
     }
     printf("Injected start address of section to be encrypted (0x%lx) into payload\n", encryption_start);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, section_header.sh_size, 0x3333333333333333, 2) != 0) {
+    if (overwrite_entrypoint(shellcode, shellcode_size, section_header.sh_size, 0x3333333333333333, 3) != 0) {
         fprintf(stderr, "Could not find encryption size marker, the byte code seems to be corrupted");
         return 1;
     }

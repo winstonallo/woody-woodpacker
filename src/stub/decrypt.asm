@@ -34,9 +34,8 @@ _start:
     pop rdi
     pop rax
 
-    jmp jmp_to_original_code
+    ;jmp jmp_to_original_code
     jmp start_decryption
-
 
     mov rax, SYS_EXIT
     mov rdi, 0
@@ -136,6 +135,8 @@ start_decryption:
     test rax, rax
     js error
 
+    jmp jmp_to_original_code
+
     push r8
     push r9
     push r10
@@ -171,21 +172,22 @@ error:
     syscall
 
 jmp_to_original_code:
-    ;mov rax, SYS_MPROTECT
-    ;mov rdi, ENTRYPOINT_MARKER
-    ;add rdi, rbx
-    ;and rdi, ~0xfff
-    ;mov rsi, DECRYPT_LEN_MARKER
-    ;mov rdx, PROT_READ | PROT_EXEC
-    ;
+    mov rax, SYS_MPROTECT
+    mov rdi, ENTRYPOINT_MARKER
+    add rdi, rbx
+    and rdi, ~0xfff
+    mov rsi, DECRYPT_LEN_MARKER
+    mov rdx, PROT_READ | PROT_EXEC
+    syscall
+
     ;pop r11
     ;pop r10
     ;pop r9
     ;pop r8
-    ;pop rdx
-    ;pop rsi
-    ;pop rdi
-    ;pop rax
+    pop rdx
+    pop rsi
+    pop rdi
+    pop rax
 
     mov rdi, ENTRYPOINT_MARKER
     add rdi, rbx
