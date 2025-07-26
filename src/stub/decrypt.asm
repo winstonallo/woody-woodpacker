@@ -158,7 +158,6 @@ xor_loop:
     mov r10b, [r11 + r8]
 
     xor r9b, r10b
-    ;xor r9b, r10b
     mov [rsi + rdx], r9b
 
     inc rdx
