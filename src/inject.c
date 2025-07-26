@@ -1,4 +1,4 @@
-#include "inc/woody.h"
+#include "woody.h"
 #include "mem.h"
 #include <elf.h>
 #include <stdbool.h>

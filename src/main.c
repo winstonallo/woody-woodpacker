@@ -1,5 +1,5 @@
 #include "../stub_bytes.h"
-#include "inc/woody.h"
+#include "woody.h"
 #include <assert.h>
 #include <elf.h>
 #include <fcntl.h>

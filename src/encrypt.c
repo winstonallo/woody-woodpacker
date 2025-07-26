@@ -1,6 +1,6 @@
-#include "inc/utils.h"
+#include "utils.h"
 #include <assert.h>
-#include "inc/woody.h"
+#include "woody.h"
 #include "str.h"
 #include <elf.h>
 #include <fcntl.h>

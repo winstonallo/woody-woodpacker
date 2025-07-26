@@ -2,7 +2,7 @@ NAME = woody_woodpacker
 
 OBJ_DIR = obj
 SRC_DIR = src
-INC_DIR = src/inc
+INC_DIR = inc
 STUB_OBJ_DIR = $(OBJ_DIR)/stub
 LIBFT_DIR = libft
 

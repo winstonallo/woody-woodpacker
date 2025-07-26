@@ -1,4 +1,4 @@
-#include "inc/woody.h"
+#include "woody.h"
 #include <assert.h>
 #include <fcntl.h>
 #include <stddef.h>
