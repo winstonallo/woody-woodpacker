@@ -27,6 +27,9 @@ _start:
     mov rdx, 14
     syscall
 
+    cmp eax, 14
+    jne error
+
     call get_base
 
     pop rdx
@@ -34,7 +37,6 @@ _start:
     pop rdi
     pop rax
 
-    ;jmp jmp_to_original_code
     jmp start_decryption
 
     mov rax, SYS_EXIT
@@ -61,7 +63,7 @@ get_base:
     cmp eax, 0
     jl error
 
-    push rax ; fd
+    push rax
 
     xor r10, r10
     xor r8, r8
@@ -69,16 +71,18 @@ get_base:
     xor rbx, rbx
     xor rdx, rdx
 
-    sub sp, 16 ; 16 bytes stack buffer
+    sub sp, 16
 
     mov rdx, 1
     lea rsi, [rsp]
     mov edi, eax
 
 read_proc_map:
-    ; read one byte
     mov rax, SYS_READ
     syscall
+
+    cmp eax, 1
+    jl error
 
     cmp BYTE [rsp], '-'
     je break
@@ -106,10 +110,12 @@ break:
     sub sp, r10w
     add sp, 16
 
-    ; close(fd)
     pop rdi
     mov rax, SYS_CLOSE
     syscall
+
+    cmp eax, 0
+    jl error
 
     ret
 
@@ -127,7 +133,7 @@ start_decryption:
     mov rax, SYS_MPROTECT
     mov rdi, DECRYPT_START_OFFSET_MARKER
     add rdi, rbx
-    and rdi, ~0xfff ; page alignment
+    and rdi, ~0xfff
     mov rsi, DECRYPT_LEN_MARKER
     add rsi, 0xfff
     mov rdx, PROT_READ | PROT_WRITE | PROT_EXEC
@@ -136,8 +142,6 @@ start_decryption:
     test rax, rax
     js error
 
-    ;jmp jmp_to_original_code
-
     push r8
     push r9
     push r10
@@ -145,7 +149,7 @@ start_decryption:
 
     lea r11, [rel xor_key]
     mov rsi, DECRYPT_START_OFFSET_MARKER
-    add rsi, rbx ; add base address
+    add rsi, rbx
     mov rcx, DECRYPT_LEN_MARKER
     mov rdx, 0
     mov r8, 0
@@ -177,9 +181,12 @@ jmp_to_original_code:
     add rdi, rbx
     and rdi, ~0xfff
     mov rsi, DECRYPT_LEN_MARKER
-    add rsi, 0xfff ; padding
+    add rsi, 0xfff
     mov rdx, PROT_READ | PROT_EXEC
     syscall
+
+    test rax, rax
+    js error
 
     pop r11
     pop r10
