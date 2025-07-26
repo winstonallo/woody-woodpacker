@@ -31,11 +31,6 @@ _start:
 
     call get_base
 
-    pop rdx
-    pop rsi
-    pop rdi
-    pop rax
-
     jmp start_decryption
 
     mov rax, SYS_EXIT
@@ -124,11 +119,6 @@ non_pie:
    ret
 
 start_decryption:
-    push rax
-    push rdi
-    push rsi
-    push rdx
-
     mov rax, SYS_MPROTECT
     mov rdi, DECRYPT_START_OFFSET_MARKER
     add rdi, rbx
