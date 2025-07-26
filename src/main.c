@@ -63,16 +63,11 @@ main(int ac, char **av) {
         return 1;
     }
     if (code_cave.size < sizeof(decryption_stub)) {
-        printf("code cave too small: code cave - %li bytes | shellcode %li bytes\n", code_cave.size, sizeof(decryption_stub));
+        fprintf(stderr, "Biggest code cave found (%zu bytes) is too small for decryption stub (%zu bytes) - this binary cannot be packed\n", code_cave.size, sizeof(decryption_stub));
         file_munmap(file);
         return 1;
     }
     printf("Found biggest code cave from 0x%lx - 0x%lx\n", code_cave.start, code_cave.start + code_cave.size);
-
-    if (code_cave.size < sizeof(decryption_stub)) {
-        fprintf(stderr, "Biggest code cave found (%zu bytes) is too small for decryption stub (%zu bytes) - this binary cannot be packed\n", code_cave.size, sizeof(decryption_stub));
-        return 1;
-    }
 
     if (shellcode_overwrite_markers(decryption_stub, sizeof(decryption_stub), *header, *section_header_entry, *program_header_entry, key)) {
         file_munmap(file);
