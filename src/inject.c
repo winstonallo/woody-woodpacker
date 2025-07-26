@@ -130,7 +130,7 @@ shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, 
     }
     printf("Size of injected shellcode: 0x%lx\n", shellcode_size);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 3) != 0) {
+    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 1) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
         return 1;
     }
@@ -148,7 +148,7 @@ shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, 
     // }
     // printf("Injected page-aligned segment of the .text section start address (0x%lx) into payload\n", text_start_aligned);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, encryption_start, 0x6666666666666666, 1) != 0) {
+    if (overwrite_entrypoint(shellcode, shellcode_size, encryption_start, 0x6666666666666666, 3) != 0) {
         fprintf(stderr, "Could not find encryption start marker, the byte code seems to be corrupted");
         return 1;
     }
