@@ -3,7 +3,10 @@ MPROTECT_ADDR_MARKER: equ 0x6969696969696969
 DECRYPT_START_OFFSET_MARKER: equ 0x6666666666666666
 DECRYPT_LEN_MARKER: equ 0x3333333333333333
 
+SYS_READ: equ 0
 SYS_WRITE: equ 1
+SYS_OPEN: equ 2
+SYS_CLOSE: equ 3
 SYS_MPROTECT: equ 10
 SYS_EXIT: equ 60
 
@@ -23,98 +26,89 @@ _start:
     mov rdx, 14
     syscall
 
+
+    call get_base
+
     pop rdx
     pop rsi
     pop rdi
     pop rax
 
-    ;mov rax, SYS_EXIT
-    ;mov rdi, 1
-    ;syscall
-
-    call call_original_code
-    ;call start_decryption
-
-woody_string:
-    db '....WOODY....', 10
-
-
-xor_key:
-    db 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01, 0x01
-
-start_decryption:
-    push rax
-    push rdi
-    push rsi
-    push rdx
-
-    mov rax, SYS_MPROTECT
-    mov rdi, MPROTECT_ADDR_MARKER
-    mov rsi, DECRYPT_LEN_MARKER
-    mov rdx, PROT_READ | PROT_WRITE | PROT_EXEC
+    mov rax, SYS_EXIT
+    mov rdi, 0
     syscall
 
-    test rax, rax
-    js error
+get_base:
+    xor rax, rax
+    xor rdi, rdi
 
-    push r8
-    push r9
-    push r10
-    push r11
+    xor rsi, rsi ; O_RDONLY
+    lea rdi, [rel proc_file_path]
+    mov rax, SYS_OPEN
+    syscall
 
-    lea r11, [rel xor_key]
-    mov rsi, DECRYPT_START_OFFSET_MARKER
-    mov rcx, DECRYPT_LEN_MARKER
-    mov rdx, 0 ; counter
-    mov r8, 0
+    cmp eax, 0
+    jl error
 
-xor_loop:
-    cmp rdx, rcx
-    jge call_original_code
+    push rax ; save fd
 
-    mov r9b, [rsi + rdx]
-    mov r10b, [r11 + r8]
+    xor r10, r10
+    xor r8, r8
+    xor rdi, rdi
+    xor rbx, rbx
+    xor rdx, rdx
 
-    xor r9b, r10b
-    mov [rsi + rdx], r9b
+    sub sp, 16 ; allocate 16 bytes on the stack for buffer
 
-    inc rdx
-    inc r8
-    and r8, 0xf
-    jmp xor_loop
+    ; int read(int fd, void* buf, int n)
+    mov rdx, 1 ; n
+    lea rsi, [rsp] ; *buf
+    mov edi, eax ; fd
+
+read_proc_map:
+    ; read one byte
+    mov rax, SYS_READ
+    syscall
+
+    cmp BYTE [rsp], '-'
+    je break
+    inc r10b
+    mov r8b, BYTE [rsp]
+
+    cmp r8b, '9'
+    jle num
+
+alpha:
+    sub r8b, 0x57
+    jmp load
+
+num:
+    sub r8b, '0'
+
+load:
+    shl rbx, 4
+    or rbx, r8
+    add rsp, 1
+    lea rsi, [rsp]
+    jmp read_proc_map
+
+break:
+    sub sp, r10w
+    add sp, 16
+
+    ; close(fd)
+    pop rdi
+    mov rax, SYS_CLOSE
+    syscall
+
+    ret
 
 error:
     mov rax, SYS_EXIT
     mov rdi, 1
     syscall
 
-call_original_code:
-    ;mov rax, SYS_MPROTECT
-    ;mov rdi, MPROTECT_ADDR_MARKER
-    ;mov rsi, DECRYPT_LEN_MARKER
-    ;mov rdx, PROT_READ | PROT_EXEC
-    ;syscall
-
-    ;pop r11
-    ;pop r10
-    ;pop r9
-    ;pop r8
-    ;pop rdx
-    ;pop rsi
-    ;pop rdi
-    ;pop rax
-
-    ;mov rax, ENTRYPOINT_MARKER
-    ;jmp rax
-
-    jmp -0x1dd
-
-    ;mov rax, ENTRYPOINT_MARKER
-    ;lea rax, [rel call_original_code]
-    ;add rax, 0xfffffe23
-    ;jmp rax
-
-    ;jmp 0xfffffe23 test.c (sample)
-    ;jmp -0xdb144
-
-; ((code_cave_start + sizeof(shellcode)) - og_entrypoint) + 5
+woody_string:
+    db "....WOODY....",10
+proc_file_path:
+    db "/proc/self/maps",0
