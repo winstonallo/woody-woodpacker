@@ -116,38 +116,39 @@ int
 shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, const Elf64_Ehdr header, const Elf64_Shdr section_header,
                             const Elf64_Phdr program_header, const uint8_t key[16]) {
 
+                                (void)header;
     const uint64_t encryption_start = program_header.p_vaddr + (section_header.sh_offset - program_header.p_offset);
-    const uint64_t encryption_size = section_header.sh_size;
-    const uint64_t page_size = 0x1000;
-    // round down to nearest page boundary for mprotect call (~(page_size - 1) = ~0xfff = 0xFFFFFFFFFFFFF000)
-    const uint64_t text_start_aligned = program_header.p_vaddr & ~(page_size - 1);
+    // const uint64_t encryption_size = section_header.sh_size;
+    // const uint64_t page_size = 0x1000;
+    // // round down to nearest page boundary for mprotect call (~(page_size - 1) = ~0xfff = 0xFFFFFFFFFFFFF000)
+    // const uint64_t text_start_aligned = program_header.p_vaddr & ~(page_size - 1);
 
     inject_xor_key(shellcode, shellcode_size, key);
     printf("Size of injected shellcode: 0x%lx\n", shellcode_size);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 0) != 0) {
+    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 1) != 0) {
         fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
         return 1;
     }
     printf("Injected original entrypoint (0x%lx) into payload\n", header.e_entry);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, text_start_aligned, 0x6969696969696969, 1) != 0) {
-        fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corrupted\n");
-        return 1;
-    }
-    printf("Injected page-aligned segment of the .text section start address (0x%lx) into payload\n", text_start_aligned);
+    // if (overwrite_entrypoint(shellcode, shellcode_size, text_start_aligned, 0x6969696969696969, 1) != 0) {
+    //     fprintf(stderr, "Could not find all occurrences of stub marker for .text section size, the byte code seems to be corrupted\n");
+    //     return 1;
+    // }
+    // printf("Injected page-aligned segment of the .text section start address (0x%lx) into payload\n", text_start_aligned);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, encryption_start, 0x6666666666666666, 1) != 0) {
-        fprintf(stderr, "Could not find encryption start marker, the byte code seems to be corrupted");
-        return 1;
-    }
-    printf("Injected start address of section to be encrypted (0x%lx) into payload\n", encryption_start);
+    // if (overwrite_entrypoint(shellcode, shellcode_size, encryption_start, 0x6666666666666666, 1) != 0) {
+    //     fprintf(stderr, "Could not find encryption start marker, the byte code seems to be corrupted");
+    //     return 1;
+    // }
+    // printf("Injected start address of section to be encrypted (0x%lx) into payload\n", encryption_start);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, encryption_size, 0x3333333333333333, 2) != 0) {
-        fprintf(stderr, "Could not find encryption size marker, the byte code seems to be corrupted");
-        return 1;
-    }
-    printf("Injected size of section to be encrypted (0x%lx) into payload\n", encryption_size);
+    // if (overwrite_entrypoint(shellcode, shellcode_size, encryption_size, 0x3333333333333333, 2) != 0) {
+    //     fprintf(stderr, "Could not find encryption size marker, the byte code seems to be corrupted");
+    //     return 1;
+    // }
+    // printf("Injected size of section to be encrypted (0x%lx) into payload\n", encryption_size);
 
     // temporarily hardcoded, should come from code_cave.start
     const size_t shellcode_start_offset = 0x1171;
