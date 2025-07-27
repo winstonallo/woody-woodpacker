@@ -1,6 +1,9 @@
 {
 	"name": "woody-woodpacker",
-	"runArgs": ["--name", "dev-woody-woodpacker"],
+	"runArgs": [
+		"--name",
+		"dev-woody-woodpacker"
+	],
 	"dockerFile": "Dockerfile",
 	"mounts": [
 		"source=${localEnv:HOME}/.ssh,target=/root/.ssh,type=bind,consistency=cached",
@@ -12,8 +15,7 @@
 				"terminal.integrated.shell.linux": "/bin/bash"
 			},
 			"extensions": [
-				"ms-vscode.cpptools",
-				"ms-vscode.cpptools-themes"
+				"llvm-vs-code-extensions.vscode-clangd"
 			]
 		}
 	},
