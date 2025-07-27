@@ -26,10 +26,10 @@ key_create(int ac, char **av, u_int8_t *key) {
         close(fd);
     } else {
         if (ft_strlen(av[2]) != 32) {
-            fprintf(stderr, "Invalid key length - must be 16 hex bytes (32 characters)");
+            fprintf(stderr, "Invalid key length - must be 16 hex bytes (32 characters)\n");
             return 1;
         } else if (parsehex((const uint8_t *)av[2], key) == -1) {
-            fprintf(stderr, "Invalid input - only lowercase hexadecimal supported");
+            fprintf(stderr, "Invalid key - only lowercase hexadecimal supported\n");
             return 1;
         }
     }
