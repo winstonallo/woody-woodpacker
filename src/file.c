@@ -1,5 +1,6 @@
 #include "woody.h"
 #include <assert.h>
+#include <errno.h>
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdio.h>
@@ -24,8 +25,12 @@ file_mmap(const char *file_name, file *file) {
 
     int off = lseek(fd, 0, SEEK_END);
     if (off == -1) {
+        if (errno != 0) {
+            perror(file_name);
+        } else {
+            fprintf(stderr, "Could not lseek on fd %d. You probably passed a directory as a file, but we are not allowed to use fcntl so all we can do is guess - bye\n", fd);
+        }
         close(fd);
-        perror(file_name);
         return 1;
     }
     file->size = off;
