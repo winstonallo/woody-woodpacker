@@ -55,9 +55,11 @@ $(OBJ_DIR):
 	mkdir -p $(OBJ_DIR)/utils
 
 clean:
+	$(MAKE) -C $(LIBFT_DIR) clean
 	rm -rf $(OBJ_DIR) stub_bytes.h
 
 fclean: clean
+	$(MAKE) -C $(LIBFT_DIR) fclean
 	rm -f $(NAME)
 
 re: fclean all
