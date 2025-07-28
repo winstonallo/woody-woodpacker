@@ -36,13 +36,12 @@ typedef enum Elf64IdentCheckResult {
 } Elf64IdentCheckResult;
 
 int parse_or_generate_key(int ac, char **av, u_int8_t *key);
-int duplicate_file(char **av);
 
 const Elf64_Shdr *shdr_get_entry(File file, const Elf64_Ehdr hdr);
 Elf64_Phdr *phdr_get_by_shdr(File file, const Elf64_Ehdr hdr, const Elf64_Shdr shdr);
 const Elf64_Phdr *phdr_get_next(File file, const Elf64_Ehdr hdr, const Elf64_Phdr phdr);
 
-const char * elf64_ident_check(const Elf64_Ehdr *hdr);
+const char *elf64_ident_check(const Elf64_Ehdr *hdr);
 
 int get_code_cave(File file, CodeCave *cave, const Elf64_Ehdr hdr, const uint64_t start, const uint64_t end);
 
