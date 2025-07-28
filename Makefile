@@ -9,7 +9,6 @@ LIBFT_DIR = libft
 BLOCK_SIZE=$(shell stat -fc %s .)
 
 SRCS = \
-	utils/fd.c \
 	utils/parsehex.c \
 	elf_header.c \
 	elf_sections.c \
