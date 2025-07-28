@@ -33,7 +33,7 @@ fd_copy_whole(int fd_dest, int fd_src) {
 }
 
 int
-file_duplicate(char **av) {
+duplicate_file(char **av) {
     int file = open(av[1], O_RDONLY);
     if (file == -1) {
         perror(av[1]);
@@ -57,7 +57,7 @@ file_duplicate(char **av) {
 }
 
 int
-fd_set_to_ph_offset(int fd, const Elf64_Ehdr header, Elf64_Phdr program_header) {
+fd_set_to_ph_offset(int fd, const Elf64_Ehdr header, Elf64_Phdr phdr) {
     int off = lseek(fd, header.e_phoff, SEEK_SET);
     if (off == -1) {
         perror("lseek - fd_new");
@@ -73,7 +73,7 @@ fd_set_to_ph_offset(int fd, const Elf64_Ehdr header, Elf64_Phdr program_header) 
             return 1;
         }
 
-        if (program_header.p_vaddr == ph.p_vaddr) {
+        if (phdr.p_vaddr == ph.p_vaddr) {
             off = lseek(fd, -sizeof(Elf64_Phdr), SEEK_CUR);
             if (off == -1) {
                 perror("lseek - fd_new");
