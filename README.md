@@ -3,29 +3,6 @@
 
 `woody-woodpacker` is a packer for 64-bit ELF binaries that encrypts their `.text` section and injects a decryption stub to create self-decrypting binaries.
 
-## How it works:
-### When packing the binary (`./woody_woodpacker <binary_file>`):
-1. The ELF header, section headers, and program headers are parsed to find the executable code section containing the entry point
-2. Unused space is found within the binary to inject the decryption stub without corrupting existing data
-3. The `.text` section is obfuscated by encrypting it with a simple XOR Cipher
-4. The [decryption stub](src/stub/decrypt.asm) is injected along with some embedded data (decryption key, original entry point offset, size of `.text` section) into the binary
-5. The ELF entry point is modified to point to the injected decryption stub
-6. The packed binary is written to a new file called `woody`
-
-### When running the packed binary (`./woody`):
-1. Execution starts at the decryption stub instead of the original entrypoint
-2. `....WOODY....` is printed to stdout to signal that the binary has been packed
-3. For Position Independent Executables (PIE), the base address is resolved by parsing `/proc/self/maps`
-4. The encrypted code is made writable with `mprotect`
-5. The code is decrypted,
-6. Memory protection is restored to `PROT_READ | PROT_EXEC` 
-7. Control is transferred back to the original entry point
-
-The packer handles both PIE and non-PIE binaries by:
-* Detecting the binary types from the ELF headers
-* Calculating runtime base addresses for PIE
-* Using absolute addresses for non-PIE
-
 ## Building
 You will need:
 * GCC/clang
@@ -76,7 +53,7 @@ flag.txt
 
 When comparing the `objdump` output of the original binary to `woody`'s, you can see that the `.text` section has been encrypted:
 ```
-(woody-woodpacker) ➜  woody-woodpacker git:(main) ✗ diff --side-by-side a.out.obj woody.obj                        
+$ diff --side-by-side a.out.obj woody.obj                        
 
 a.out:     file format elf64-x86-64                           | woody:     file format elf64-x86-64
 
@@ -114,6 +91,29 @@ Disassembly of section .text:                                   Disassembly of s
                                                               >     107d:       38 e4                   cmp    %ah,%ah
                                                               >     107f:       4b                      rex.WXB
 ```
+
+## How it works:
+### When packing the binary (`./woody_woodpacker <binary_file>`):
+1. The ELF header, section headers, and program headers are parsed to find the executable code section containing the entry point
+2. Unused space is found within the binary to inject the decryption stub without corrupting existing data
+3. The `.text` section is obfuscated by encrypting it with a simple XOR Cipher
+4. The [decryption stub](src/stub/decrypt.asm) is injected along with some embedded data (decryption key, original entry point offset, size of `.text` section) into the binary
+5. The ELF entry point is modified to point to the injected decryption stub
+6. The packed binary is written to a new file called `woody`
+
+### When running the packed binary (`./woody`):
+1. Execution starts at the decryption stub instead of the original entrypoint
+2. `....WOODY....` is printed to stdout to signal that the binary has been packed
+3. For Position Independent Executables (PIE), the base address is resolved by parsing `/proc/self/maps`
+4. The encrypted code is made writable with `mprotect`
+5. The code is decrypted,
+6. Memory protection is restored to `PROT_READ | PROT_EXEC` 
+7. Control is transferred back to the original entry point
+
+The packer handles both PIE and non-PIE binaries by:
+* Detecting the binary types from the ELF headers
+* Calculating runtime base addresses for PIE
+* Using absolute addresses for non-PIE
 
 ## Limitations
 This packer has some more or less intentional limitations:
