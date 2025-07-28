@@ -4,6 +4,7 @@
 #include <fcntl.h>
 #include <stddef.h>
 #include <stdio.h>
+#include <string.h>
 #include <sys/mman.h>
 #include <unistd.h>
 
@@ -19,7 +20,7 @@ file_mmap(const char *file_name, File *file) {
 
     int fd = open(file_name, O_RDONLY);
     if (fd == -1) {
-        perror(file_name);
+        fprintf(stderr, "(open) Error on %s: %s\n", file_name, strerror(errno));
         return 1;
     }
 
@@ -28,7 +29,7 @@ file_mmap(const char *file_name, File *file) {
         if (errno != 0) {
             perror(file_name);
         } else {
-            fprintf(stderr, "Could not lseek on fd %d. You probably passed a directory as a file, but we are not allowed to use fcntl so all we can do is guess - bye\n", fd);
+            fprintf(stderr, "(lseek) Error on fd %d. You likely passed a directory as a file - we cannot use fcntl, so all we can do is guess\n", fd);
         }
         close(fd);
         return 1;
@@ -46,7 +47,7 @@ file_mmap(const char *file_name, File *file) {
     close(fd);
 
     if (file->mem == MAP_FAILED) {
-        perror("mem");
+        fprintf(stderr, "(mmap) Error mapping %s: %s\n", file_name, strerror(errno));
         return 1;
     }
 
@@ -58,13 +59,13 @@ file_write(File file) {
     const char *outfile = "woody";
     int fd = open(outfile, O_CREAT | O_RDWR, 0755);
     if (fd == -1) {
-        perror("woody");
+        fprintf(stderr, "(open) Error on %s: %s\n", outfile, strerror(errno));
         return 1;
     }
     size_t bytes_written = write(fd, file.mem, file.size);
     if (bytes_written != file.size) {
         close(fd);
-        perror("woody");
+        fprintf(stderr, "(open) Error on %s (fd %d): %s\n", outfile, fd, strerror(errno));
         return 1;
     }
 
