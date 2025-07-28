@@ -1,4 +1,5 @@
 #include "../stub_bytes.h"
+#include "mem.h"
 #include "woody.h"
 #include <assert.h>
 #include <elf.h>
@@ -16,72 +17,73 @@
 int
 main(int ac, char **av) {
     if (ac != 2 && ac != 3) {
-        printf("wrong usage: ./woody BINARY_NAME [ENCRYPTION_KEY(16 bytes)]\n");
+        fprintf(stderr, "Invalid arguments\nUsage: ./woody BINARY_NAME [ENCRYPTION_KEY(16 bytes)]\n");
         return 1;
     }
 
-    const uint8_t key[16] = {0};
-    if (key_create(ac, av, (u_int8_t *)key)) return 1;
+    Payload payload = {0};
+    if (parse_or_generate_key(ac, av, payload.key)) return 1;
+    payload.shellcode.data = stub;
+    payload.shellcode.len = sizeof(stub);
 
-    file file;
-    const char *binary_name = av[1];
-    if (file_mmap(binary_name, &file)) return 1;
+    File file;
+    if (file_mmap(av[1], &file)) return 1;
 
     Elf64_Ehdr *header = file.mem;
-
-    if (elf64_ident_check(header)) {
+    const char *res = elf64_ident_check(header);
+    if (*res != '\0') {
+        fprintf(stderr, "Error validating %s: %s\n", av[1], res);
         file_munmap(file);
         return 1;
     }
 
-    const Elf64_Shdr *section_header_entry = section_header_entry_get(file, *header);
-    if (section_header_entry == NULL) {
+    const Elf64_Shdr *shdr_entry = shdr_get_entry(file, *header);
+    if (shdr_entry == NULL) {
         file_munmap(file);
         return 1;
     }
-    printf("Found section header including the program entry point: 0x%lx - 0x%lx\n", section_header_entry->sh_offset,
-           section_header_entry->sh_offset + section_header_entry->sh_size);
+    printf("Found section header including entry point at 0x%lx - 0x%lx\n", shdr_entry->sh_offset, shdr_entry->sh_offset + shdr_entry->sh_size);
 
-    Elf64_Phdr *program_header_entry = program_header_by_section_header_get(file, *header, *section_header_entry);
-    if (program_header_entry == NULL) {
+    Elf64_Phdr *phdr_entry = phdr_get_by_shdr(file, *header, *shdr_entry);
+    if (phdr_entry == NULL) {
         file_munmap(file);
         return 1;
     }
-    printf("Found program header including the section header: 0x%lx - 0x%lx\n", program_header_entry->p_offset,
-           program_header_entry->p_offset + program_header_entry->p_filesz);
+    printf("Found program header of entry point section header at 0x%lx - 0x%lx\n", phdr_entry->p_offset, phdr_entry->p_offset + phdr_entry->p_filesz);
 
-    const Elf64_Phdr *program_header_after_entry = program_header_get_after(file, *header, *program_header_entry);
-    if (program_header_after_entry == NULL) {
+    const Elf64_Phdr *next_phdr = phdr_get_next(file, *header, *phdr_entry);
+    if (next_phdr == NULL) {
         file_munmap(file);
         return 1;
     }
-    printf("Found program header closest to entrypoint for finding codecave at 0x%lx\n", program_header_after_entry->p_offset);
+    printf("Found next program header 0x%lx\n", next_phdr->p_offset);
 
-    code_cave_t code_cave;
-    if (code_cave_get(file, &code_cave, *header, program_header_entry->p_offset, program_header_after_entry->p_offset)) {
+    CodeCave cave;
+    if (get_code_cave(file, &cave, *header, phdr_entry->p_offset, next_phdr->p_offset)) {
         file_munmap(file);
         return 1;
     }
-    if (code_cave.size < sizeof(decryption_stub)) {
-        fprintf(stderr, "Biggest code cave found (%zu bytes) too small for decryption stub (%zu bytes) - this binary cannot be packed\n", code_cave.size, sizeof(decryption_stub));
+    if (cave.size < sizeof(stub)) {
+        fprintf(stderr, "Biggest code cave found (%zu bytes) too small for stub (%zu bytes) - this binary cannot be packed\n", cave.size, sizeof(stub));
         file_munmap(file);
         return 1;
     }
-    printf("Found biggest code cave from 0x%lx - 0x%lx\n", code_cave.start, code_cave.start + code_cave.size);
+    printf("Found biggest code cave from 0x%lx - 0x%lx\n", cave.start, cave.start + cave.size);
 
-    if (shellcode_overwrite_markers(decryption_stub, sizeof(decryption_stub), *header, *section_header_entry, *program_header_entry, key)) {
+    printf("\n");
+    if (shellcode_overwrite_markers(payload, *header, *shdr_entry, *phdr_entry)) {
         file_munmap(file);
         return 1;
     }
 
-    memcpy(file.mem + code_cave.start, decryption_stub, sizeof(decryption_stub));
+    ft_memcpy(file.mem + cave.start, stub, sizeof(stub));
+    printf("\nInjected patched shellcode into binary at offset 0x%lx\n", cave.start);
 
-    header->e_entry = program_header_entry->p_vaddr + (code_cave.start - program_header_entry->p_offset);
+    header->e_entry = phdr_entry->p_vaddr + (cave.start - phdr_entry->p_offset);
+    phdr_entry->p_filesz += sizeof(stub);
+    phdr_entry->p_memsz += sizeof(stub);
 
-    program_header_entry->p_filesz += sizeof(decryption_stub);
-    program_header_entry->p_memsz += sizeof(decryption_stub);
-
-    section_text_encrypt(file, *section_header_entry, key);
+    encrypt(file, *shdr_entry, payload.key);
 
     if (file_write(file)) {
         file_munmap(file);
