@@ -5,23 +5,23 @@
 #include <unistd.h>
 
 Elf64_Phdr *
-program_header_by_section_header_get(file file, const Elf64_Ehdr header, const Elf64_Shdr section_header) {
+phdr_get_by_shdr(File file, const Elf64_Ehdr header, const Elf64_Shdr shdr) {
     assert(file.mem != NULL);
     assert(header.e_phoff + header.e_phnum * header.e_phentsize <= file.size);
 
-    const uint64_t sh_start = section_header.sh_offset;
-    const uint64_t sh_end = section_header.sh_offset + section_header.sh_size - 1;
+    const uint64_t sh_start = shdr.sh_offset;
+    const uint64_t sh_end = shdr.sh_offset + shdr.sh_size - 1;
 
-    Elf64_Phdr *program_header_table = file.mem + header.e_phoff;
+    Elf64_Phdr *phdr_table = file.mem + header.e_phoff;
 
     for (int i = 0; i < header.e_phnum; i++) {
-        Elf64_Phdr *ph = program_header_table + i;
+        Elf64_Phdr *ph = phdr_table + i;
 
         const uint64_t ph_start = ph->p_offset;
         const uint64_t ph_end = ph->p_offset + ph->p_filesz;
 
-        const uint16_t section_is_inside_program_header = sh_start >= ph_start && sh_end <= ph_end;
-        if (section_is_inside_program_header) {
+        const uint16_t section_is_inside_phdr = sh_start >= ph_start && sh_end <= ph_end;
+        if (section_is_inside_phdr) {
             return ph;
         }
     }
@@ -31,32 +31,32 @@ program_header_by_section_header_get(file file, const Elf64_Ehdr header, const E
 }
 
 const Elf64_Phdr *
-program_header_get_after(file file, const Elf64_Ehdr header, const Elf64_Phdr program_header) {
+phdr_get_next(File file, const Elf64_Ehdr header, const Elf64_Phdr phdr) {
     assert(file.mem != NULL);
     assert(header.e_phoff + header.e_phnum * header.e_phentsize <= file.size);
 
-    Elf64_Phdr *program_header_table = file.mem + header.e_phoff;
+    Elf64_Phdr *phdr_table = file.mem + header.e_phoff;
 
-    Elf64_Phdr *program_header_closest = NULL;
+    Elf64_Phdr *phdr_closest = NULL;
 
     for (int i = 0; i < header.e_phnum; i++) {
-        Elf64_Phdr *ph = program_header_table + i;
-        if (program_header.p_offset < ph->p_offset) {
-            if (program_header_closest == NULL) {
-                program_header_closest = ph;
+        Elf64_Phdr *ph = phdr_table + i;
+        if (phdr.p_offset < ph->p_offset) {
+            if (phdr_closest == NULL) {
+                phdr_closest = ph;
                 continue;
             }
 
-            const uint64_t distance_cur = ph->p_offset - program_header.p_offset;
-            const uint64_t distance_old = ph->p_offset - program_header_closest->p_offset;
-            if (distance_cur < distance_old) program_header_closest = ph;
+            const uint64_t distance_cur = ph->p_offset - phdr.p_offset;
+            const uint64_t distance_old = ph->p_offset - phdr_closest->p_offset;
+            if (distance_cur < distance_old) phdr_closest = ph;
         }
     }
 
-    if (program_header_closest == NULL) {
+    if (phdr_closest == NULL) {
         fprintf(stderr, "could not find program header after current one\n");
         return NULL;
     }
 
-    return program_header_closest;
+    return phdr_closest;
 }
