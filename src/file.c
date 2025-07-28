@@ -8,12 +8,12 @@
 #include <unistd.h>
 
 int
-file_munmap(const file file) {
+file_munmap(const File file) {
     return munmap(file.mem, file.size);
 }
 
 int
-file_mmap(const char *file_name, file *file) {
+file_mmap(const char *file_name, File *file) {
     assert(file_name != NULL);
     assert(file != NULL);
 
@@ -54,8 +54,9 @@ file_mmap(const char *file_name, file *file) {
 }
 
 int
-file_write(file file) {
-    int fd = open("woody", O_CREAT | O_RDWR, 0755);
+file_write(File file) {
+    const char *outfile = "woody";
+    int fd = open(outfile, O_CREAT | O_RDWR, 0755);
     if (fd == -1) {
         perror("woody");
         return 1;

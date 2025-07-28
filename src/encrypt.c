@@ -1,7 +1,6 @@
-#include "utils.h"
-#include <assert.h>
-#include "woody.h"
 #include "str.h"
+#include "woody.h"
+#include <assert.h>
 #include <elf.h>
 #include <fcntl.h>
 #include <stddef.h>
@@ -11,7 +10,7 @@
 #include <unistd.h>
 
 int
-key_create(int ac, char **av, u_int8_t *key) {
+parse_or_generate_key(int ac, char **av, u_int8_t *key) {
     if (ac == 2) {
         int fd = open("/dev/urandom", O_RDONLY);
         if (fd == -1) {
@@ -37,11 +36,11 @@ key_create(int ac, char **av, u_int8_t *key) {
 }
 
 void
-section_text_encrypt(file file, const Elf64_Shdr section_header, const uint8_t key[16]) {
+encrypt(File file, const Elf64_Shdr shdr, const uint8_t key[16]) {
     assert(file.mem != NULL);
 
-    const uint64_t start = section_header.sh_offset;
-    const uint64_t size = section_header.sh_size;
+    const uint64_t start = shdr.sh_offset;
+    const uint64_t size = shdr.sh_size;
 
     assert(file.size >= start + size);
 
