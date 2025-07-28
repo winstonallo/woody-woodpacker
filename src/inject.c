@@ -1,12 +1,12 @@
-#include "woody.h"
 #include "mem.h"
+#include "woody.h"
 #include <elf.h>
 #include <stdbool.h>
 #include <stddef.h>
 #include <stdint.h>
 #include <stdio.h>
 
-int
+static inline int
 inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint8_t key[16]) {
     const uint8_t marker[16] = {1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 
@@ -19,7 +19,7 @@ inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint
                 for (int byte_idx = 0; byte_idx < 16; ++byte_idx) {
                     snprintf(decryption_key_hex + byte_idx * 2, 3, "%02x", key[byte_idx]);
                 }
-                printf("Injected decryption key %s into payload at position %lu\n", decryption_key_hex, i);
+                printf("Patched decryption key %s into payload at position %lu\n", decryption_key_hex, i);
                 return 0;
             }
             j++;
@@ -29,8 +29,8 @@ inject_xor_key(const uint8_t *shellcode, const size_t shellcode_size, const uint
     return 1;
 }
 
-bool
-overwrite_entrypoint(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoint, uint64_t marker, size_t occurrences) {
+static inline bool
+overwrite_marker(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoint, uint64_t marker, size_t occurrences) {
     size_t found = 0;
 
     for (size_t i = 0; i < payload_size - 8; ++i) {
@@ -49,7 +49,7 @@ overwrite_entrypoint(uint8_t *payload, size_t payload_size, Elf64_Addr entrypoin
     return found != occurrences;
 }
 
-void
+static inline void
 print_payload(uint8_t *payload, size_t payload_size) {
     printf("\n -- Final Payload --\n");
     size_t i;
@@ -67,23 +67,22 @@ print_payload(uint8_t *payload, size_t payload_size) {
 }
 
 int
-code_cave_get(file file, code_cave_t *code_cave, const Elf64_Ehdr header, const uint64_t start, const uint64_t end) {
+get_code_cave(File file, CodeCave *code_cave, const Elf64_Ehdr header, const uint64_t start, const uint64_t end) {
     uint64_t code_cave_biggest_start = 0;
     uint64_t code_cave_biggest_end = 0;
 
     uint64_t last_section_end = start;
     uint64_t next_section_start;
 
-    const Elf64_Shdr *section_header_table = file.mem + header.e_shoff;
+    const Elf64_Shdr *shdr_table = file.mem + header.e_shoff;
 
     for (int i = 0; i < header.e_shnum; i++) {
-        const Elf64_Shdr *sh = section_header_table + i;
+        const Elf64_Shdr *sh = shdr_table + i;
 
         const uint64_t sh_start = sh->sh_offset;
         const uint64_t sh_end = sh->sh_offset + sh->sh_size;
 
-        const uint8_t section_is_inside_program_header = sh_start >= start && sh_end <= end;
-        if (section_is_inside_program_header) {
+        if (sh_start >= start && sh_end <= end) {
             next_section_start = sh_start;
 
             uint64_t code_cave_size_cur = next_section_start - last_section_end;
@@ -99,8 +98,8 @@ code_cave_get(file file, code_cave_t *code_cave, const Elf64_Ehdr header, const 
     }
 
     next_section_start = end;
-    uint64_t code_cave_size_cur = next_section_start - last_section_end;
 
+    uint64_t code_cave_size_cur = next_section_start - last_section_end;
     uint64_t code_cave_biggest_size = code_cave_biggest_end - code_cave_biggest_start;
     if (code_cave_biggest_size < code_cave_size_cur) {
         code_cave_biggest_start = last_section_end;
@@ -115,40 +114,38 @@ code_cave_get(file file, code_cave_t *code_cave, const Elf64_Ehdr header, const 
 }
 
 int
-shellcode_overwrite_markers(uint8_t shellcode[], const uint64_t shellcode_size, const Elf64_Ehdr header, const Elf64_Shdr section_header,
-                            const Elf64_Phdr program_header, const uint8_t key[16]) {
-    const uint64_t encryption_start = program_header.p_vaddr + (section_header.sh_offset - program_header.p_offset);
+shellcode_overwrite_markers(Payload payload, const Elf64_Ehdr header, const Elf64_Shdr shdr, const Elf64_Phdr phdr) {
+    const uint64_t encryption_start = phdr.p_vaddr + (shdr.sh_offset - phdr.p_offset);
 
-    if (inject_xor_key(shellcode, shellcode_size, key) != 0) {
-        fprintf(stderr, "Could not find stub marker for the XOR decryption key, the byte code seems to be corrupted.\n");
+    if (inject_xor_key(payload.shellcode.data, payload.shellcode.len, payload.key) != 0) {
+        fprintf(stderr, "Could not find stub marker for the XOR decryption key, the shellcode seems to be corrupted.\n");
         return 1;
     }
-    printf("Size of injected shellcode: 0x%lx\n", shellcode_size);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_entry, 0x4242424242424242, 1) != 0) {
-        fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
+    if (overwrite_marker(payload.shellcode.data, payload.shellcode.len, header.e_entry, 0x4242424242424242, 1) != 0) {
+        fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the shellcode seems to be corrupted\n");
         return 1;
     }
-    printf("Injected original entrypoint (0x%lx) into payload\n", header.e_entry);
+    printf("Patched entrypoint (0x%lx) into payload\n", header.e_entry);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, header.e_type == ET_DYN, 0x2424242424242424, 1) != 0) {
-        fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the byte code seems to be corrupted\n");
+    if (overwrite_marker(payload.shellcode.data, payload.shellcode.len, header.e_type == ET_DYN, 0x2424242424242424, 1) != 0) {
+        fprintf(stderr, "Could not find all occurrences of stub marker for original entrypoint address, the shellcode seems to be corrupted\n");
         return 1;
     }
-    printf("Injected original entrypoint (0x%lx) into payload\n", header.e_entry);
+    printf("Patched shellcode size (%zu bytes) into payload\n", payload.shellcode.len);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, encryption_start, 0x6666666666666666, 3) != 0) {
-        fprintf(stderr, "Could not find encryption start marker, the byte code seems to be corrupted\n");
+    if (overwrite_marker(payload.shellcode.data, payload.shellcode.len, encryption_start, 0x6666666666666666, 3) != 0) {
+        fprintf(stderr, "Could not find encryption start marker, the shellcode seems to be corrupted\n");
         return 1;
     }
-    printf("Injected start address of section to be encrypted (0x%lx) into payload\n", encryption_start);
+    printf("Patched start address of section to be encrypted (0x%lx) into payload\n", encryption_start);
 
-    if (overwrite_entrypoint(shellcode, shellcode_size, section_header.sh_size, 0x3333333333333333, 3) != 0) {
-        fprintf(stderr, "Could not find encryption size marker, the byte code seems to be corrupted\n");
+    if (overwrite_marker(payload.shellcode.data, payload.shellcode.len, shdr.sh_size, 0x3333333333333333, 3) != 0) {
+        fprintf(stderr, "Could not find encryption size marker, the shellcode seems to be corrupted\n");
         return 1;
     }
-    printf("Injected size of section to be encrypted (0x%lx) into payload\n", section_header.sh_size);
+    printf("Patched size of section to be encrypted (0x%lx) into payload\n", shdr.sh_size);
 
-    print_payload(shellcode, shellcode_size);
+    print_payload(payload.shellcode.data, payload.shellcode.len);
     return 0;
 }
