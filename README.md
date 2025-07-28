@@ -122,5 +122,5 @@ This packer has some more or less intentional limitations:
 * The decryption stub pattern is easily recognizable
 
 ## References
-[Practical Binary Analysis, Dennis Andriesse](https://practicalbinaryanalysis.com/)
-[ELF Format Specification](https://refspecs.linuxfoundation.org/elf/elf.pdf)
+* [Practical Binary Analysis, Dennis Andriesse](https://practicalbinaryanalysis.com/)
+* [ELF Format Specification](https://refspecs.linuxfoundation.org/elf/elf.pdf)
