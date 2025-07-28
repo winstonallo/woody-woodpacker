@@ -5,14 +5,15 @@
 
 How it works:
 1. pack-time
-  i. Parses the ELF header, section header, and program headers to find the executable code section
-  ii. Finds unused space within the binary (=code cave) to inject the decryption stub
+  a. Parses the ELF header, section header, and program headers to find the executable code section
+  b. Finds unused space within the binary (=code cave) to inject the decryption stub
 
 ## Building
 You will need:
 * GCC/clang
 * NASM
 * Make
+
 Alternatively, you can use the [devcontainer config](.devcontainer), which has all requirements pre-installed.
 
 ```bash
